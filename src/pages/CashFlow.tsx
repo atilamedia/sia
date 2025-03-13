@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +16,9 @@ import {
   Search, 
   Trash2, 
   Edit, 
-  MoreHorizontal 
+  MoreHorizontal,
+  Calendar,
+  X
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -26,6 +27,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { generateId } from "@/lib/utils";
 import { sampleAccounts } from "@/lib/data";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function CashFlow() {
   const [cashFlows, setCashFlows] = useState<CashFlowType[]>(sampleCashFlows);
@@ -37,14 +43,33 @@ export default function CashFlow() {
   const [flowToDelete, setFlowToDelete] = useState<CashFlowType | null>(null);
   const { toast } = useToast();
   
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [accountFilter, setAccountFilter] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
+  
   const filteredCashFlows = cashFlows.filter(flow => {
     const matchesSearch = flow.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         flow.code.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesType = filterType === "all" || 
                       (filterType === "in" && flow.code.startsWith("CI")) || 
                       (filterType === "out" && flow.code.startsWith("CO"));
-    return matchesSearch && matchesType;
+    
+    const flowDate = new Date(flow.date);
+    const matchesDateFrom = !dateFrom || flowDate >= dateFrom;
+    const matchesDateTo = !dateTo || flowDate <= dateTo;
+    
+    const matchesAccount = !accountFilter || flow.accountCode === accountFilter;
+    
+    return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && matchesAccount;
   });
+
+  const activeFiltersCount = [
+    dateFrom !== undefined, 
+    dateTo !== undefined, 
+    accountFilter !== ""
+  ].filter(Boolean).length;
 
   const handleCreateNew = () => {
     setEditingFlow(null);
@@ -74,12 +99,16 @@ export default function CashFlow() {
   };
 
   const exportToExcel = () => {
-    // In a real app, you'd implement actual Excel export
-    // For now we'll just show a toast notification
     toast({
       title: "Data diexport",
       description: "Data arus kas berhasil diexport ke Excel.",
     });
+  };
+
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setAccountFilter("");
   };
 
   return (
@@ -105,45 +134,172 @@ export default function CashFlow() {
         </div>
         
         <Tabs defaultValue="all" className="mt-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-            <TabsList>
-              <TabsTrigger value="all" onClick={() => setFilterType("all")}>Semua</TabsTrigger>
-              <TabsTrigger value="in" onClick={() => setFilterType("in")}>Kas Masuk</TabsTrigger>
-              <TabsTrigger value="out" onClick={() => setFilterType("out")}>Kas Keluar</TabsTrigger>
-            </TabsList>
-            
-            <div className="flex w-full sm:w-auto gap-2">
-              <div className="relative w-full sm:w-[300px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Cari transaksi..."
-                  className="pl-8 w-full"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <TabsList>
+                <TabsTrigger value="all" onClick={() => setFilterType("all")}>Semua</TabsTrigger>
+                <TabsTrigger value="in" onClick={() => setFilterType("in")}>Kas Masuk</TabsTrigger>
+                <TabsTrigger value="out" onClick={() => setFilterType("out")}>Kas Keluar</TabsTrigger>
+              </TabsList>
+              
+              <div className="flex w-full sm:w-auto gap-2">
+                <div className="relative w-full sm:w-[300px]">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Cari transaksi..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={activeFiltersCount > 0 ? "relative" : ""}
+                >
+                  <Filter className="h-4 w-4" />
+                  {activeFiltersCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                      {activeFiltersCount}
+                    </span>
+                  )}
+                </Button>
               </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
             </div>
+            
+            {showFilters && (
+              <Card className="p-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="date-from">Tanggal Dari</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="date-from"
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !dateFrom && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {dateFrom ? format(dateFrom, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={dateFrom}
+                          onSelect={setDateFrom}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="date-to">Tanggal Sampai</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="date-to"
+                          variant={"outline"}
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !dateTo && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {dateTo ? format(dateTo, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={dateTo}
+                          onSelect={setDateTo}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="account-filter">Rekening</Label>
+                    <Select
+                      value={accountFilter}
+                      onValueChange={setAccountFilter}
+                    >
+                      <SelectTrigger id="account-filter">
+                        <SelectValue placeholder="Semua rekening" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Semua rekening</SelectItem>
+                        {sampleAccounts.map(account => (
+                          <SelectItem key={account.code} value={account.code}>
+                            {account.name} ({account.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button
+                    variant="outline" 
+                    size="icon" 
+                    onClick={clearFilters}
+                    className="h-10 mt-auto"
+                    title="Reset filter"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {activeFiltersCount > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {dateFrom && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        Dari: {format(dateFrom, "dd/MM/yyyy")}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setDateFrom(undefined)} />
+                      </Badge>
+                    )}
+                    {dateTo && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        Sampai: {format(dateTo, "dd/MM/yyyy")}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setDateTo(undefined)} />
+                      </Badge>
+                    )}
+                    {accountFilter && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        Rekening: {sampleAccounts.find(a => a.code === accountFilter)?.name || accountFilter}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setAccountFilter("")} />
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
           
-          <TabsContent value="all" className="mt-0">
+          <TabsContent value="all" className="mt-4">
             <CashFlowTable 
               cashFlows={filteredCashFlows} 
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
           </TabsContent>
-          <TabsContent value="in" className="mt-0">
+          <TabsContent value="in" className="mt-4">
             <CashFlowTable 
               cashFlows={filteredCashFlows} 
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
           </TabsContent>
-          <TabsContent value="out" className="mt-0">
+          <TabsContent value="out" className="mt-4">
             <CashFlowTable 
               cashFlows={filteredCashFlows} 
               onEdit={handleEdit}
@@ -159,7 +315,6 @@ export default function CashFlow() {
         editingFlow={editingFlow}
         onSave={(newFlow) => {
           if (editingFlow) {
-            // Update existing flow
             setCashFlows(cashFlows.map(flow => 
               flow.code === editingFlow.code ? newFlow : flow
             ));
@@ -168,7 +323,6 @@ export default function CashFlow() {
               description: `Transaksi ${newFlow.code} berhasil diperbarui.`,
             });
           } else {
-            // Add new flow
             setCashFlows([...cashFlows, newFlow]);
             toast({
               title: "Transaksi baru dibuat",
@@ -329,7 +483,6 @@ function CashFlowFormDialog({
   });
   const [flowType, setFlowType] = useState<'in' | 'out'>('in');
 
-  // Reset form when dialog opens/closes or editing flow changes
   useState(() => {
     if (editingFlow) {
       setFormData(editingFlow);
@@ -355,7 +508,6 @@ function CashFlowFormDialog({
   });
 
   const handleSave = () => {
-    // Generate code for new entries
     let code = formData.code;
     if (!editingFlow) {
       const prefix = flowType === 'in' ? 'CI-' : 'CO-';
@@ -554,3 +706,4 @@ function CashFlowFormDialog({
     </Dialog>
   );
 }
+
