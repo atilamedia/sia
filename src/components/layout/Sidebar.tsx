@@ -69,7 +69,7 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex items-center">
               <BarChart2 className="w-6 h-6 text-primary" />
-              <span className="ml-2 font-semibold">Aplikasi Akuntansi RSHD</span>
+              <span className="ml-2 font-semibold">SIA RSHD</span>
             </div>
           )}
           <button 
@@ -114,7 +114,7 @@ export function Sidebar() {
             "text-xs text-sidebar-foreground/70 transition-opacity duration-200",
             collapsed && "opacity-0"
           )}>
-            &copy; {new Date().getFullYear()} Aplikasi Akuntansi RSHD
+            &copy; {new Date().getFullYear()} SIA RSHD
           </div>
         </div>
       </div>
