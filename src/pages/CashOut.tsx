@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -14,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { startOfDay, endOfDay, isWithinInterval, format } from "date-fns";
 
 const CashOut = () => {
   const cashOutFlows = sampleCashFlows.filter(flow => flow.code.startsWith("CO"));
@@ -48,11 +47,9 @@ const CashOut = () => {
     setFilteredCashOut(cashOutFlows);
   };
 
-  // Apply all filters: search and date
   const applyFilters = (term: string, dateRange: DateRange | undefined) => {
     let results = cashOutFlows;
     
-    // Apply search filter if term exists
     if (term.trim()) {
       results = results.filter(
         (cashOut) =>
@@ -63,7 +60,6 @@ const CashOut = () => {
       );
     }
     
-    // Apply date filter if date range exists
     if (dateRange?.from) {
       const fromDate = startOfDay(dateRange.from);
       const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
