@@ -1,7 +1,7 @@
 
 import { DashboardCard } from "./DashboardCard";
 import { getFinancialSummary, formatCurrency } from "@/lib/data";
-import { BanknoteIcon, ArrowDownLeftIcon, ArrowUpRightIcon, BarChart4Icon, WalletIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, TrendingDownIcon, TrendingUpIcon, WalletIcon } from "lucide-react";
 
 export function FinancialSummary() {
   const summary = getFinancialSummary();
@@ -11,7 +11,7 @@ export function FinancialSummary() {
       <DashboardCard
         title="Total Kas Masuk"
         value={formatCurrency(summary.totalCashIn)}
-        icon={ArrowUpRightIcon}
+        icon={ArrowUpRight}
         change={`+12% dari bulan lalu`}
         trend="up"
         variant="success"
@@ -20,7 +20,7 @@ export function FinancialSummary() {
       <DashboardCard
         title="Total Kas Keluar"
         value={formatCurrency(summary.totalCashOut)}
-        icon={ArrowDownLeftIcon}
+        icon={ArrowDownLeft}
         change={`-8% dari bulan lalu`}
         trend="down"
         variant="danger"
