@@ -6,33 +6,73 @@ import { Card } from "@/components/ui/card";
 import { sampleCashFlows } from "@/lib/data";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { CashFlow } from "@/lib/types";
-import { Plus, Search, FileEdit, Trash2, Download, Filter } from "lucide-react";
+import { Plus, Search, FileEdit, Trash2, Download, Filter, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import { DateRange } from "react-day-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { startOfDay, endOfDay, isWithinInterval, format } from "date-fns";
 
 const CashIn = () => {
   const cashInFlows = sampleCashFlows.filter(flow => flow.code.startsWith("CI"));
   const [filteredCashIn, setFilteredCashIn] = useState<CashFlow[]>(cashInFlows);
   const [searchTerm, setSearchTerm] = useState("");
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<{dateFilter: boolean}>({
+    dateFilter: false,
+  });
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
     setSearchTerm(term);
+    applyFilters(term, date);
+  };
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDate(range);
+    if (range?.from) {
+      setActiveFilters(prev => ({ ...prev, dateFilter: true }));
+    } else {
+      setActiveFilters(prev => ({ ...prev, dateFilter: false }));
+    }
+    applyFilters(searchTerm, range);
+  };
+
+  const clearFilters = () => {
+    setDate(undefined);
+    setActiveFilters({ dateFilter: false });
+    setFilteredCashIn(cashInFlows);
+  };
+
+  // Apply all filters: search and date
+  const applyFilters = (term: string, dateRange: DateRange | undefined) => {
+    let results = cashInFlows;
     
-    if (!term.trim()) {
-      setFilteredCashIn(cashInFlows);
-      return;
+    // Apply search filter if term exists
+    if (term.trim()) {
+      results = results.filter(
+        (cashIn) =>
+          cashIn.description.toLowerCase().includes(term.toLowerCase()) ||
+          cashIn.accountName.toLowerCase().includes(term.toLowerCase()) ||
+          cashIn.accountCode.toLowerCase().includes(term.toLowerCase()) ||
+          (cashIn.payer && cashIn.payer.toLowerCase().includes(term.toLowerCase()))
+      );
     }
     
-    const results = cashInFlows.filter(
-      (cashIn) =>
-        cashIn.description.toLowerCase().includes(term.toLowerCase()) ||
-        cashIn.accountName.toLowerCase().includes(term.toLowerCase()) ||
-        cashIn.accountCode.toLowerCase().includes(term.toLowerCase()) ||
-        (cashIn.payer && cashIn.payer.toLowerCase().includes(term.toLowerCase()))
-    );
+    // Apply date filter if date range exists
+    if (dateRange?.from) {
+      const fromDate = startOfDay(dateRange.from);
+      const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+      
+      results = results.filter((cashIn) => {
+        const cashInDate = new Date(cashIn.date);
+        return isWithinInterval(cashInDate, { start: fromDate, end: toDate });
+      });
+    }
     
     setFilteredCashIn(results);
   };
@@ -58,10 +98,52 @@ const CashIn = () => {
                       onChange={handleSearch}
                     />
                   </div>
-                  <button className="inline-flex items-center justify-center h-10 px-4 py-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input hover:bg-accent hover:text-accent-foreground">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filter
-                  </button>
+                  
+                  <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={activeFilters.dateFilter ? "bg-primary/10 text-primary" : ""}
+                      >
+                        <Filter className="mr-2 h-4 w-4" />
+                        Filter
+                        {activeFilters.dateFilter && (
+                          <span className="ml-2 rounded-full bg-primary w-2 h-2" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-4">
+                        <h4 className="font-medium leading-none">Filter Transaksi</h4>
+                        <div className="pt-2">
+                          <Label htmlFor="date-range">Periode Tanggal</Label>
+                          <div className="mt-2">
+                            <DateRangePicker 
+                              dateRange={date} 
+                              onDateRangeChange={handleDateRangeChange}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-4">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={clearFilters}
+                            disabled={!activeFilters.dateFilter}
+                          >
+                            Reset
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => setIsFilterOpen(false)}
+                          >
+                            Terapkan
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
                   <Dialog>
                     <DialogTrigger asChild>
                       <button className="inline-flex items-center justify-center h-10 px-4 py-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90">
@@ -147,6 +229,26 @@ const CashIn = () => {
                   </Dialog>
                 </div>
               </div>
+              
+              {activeFilters.dateFilter && (
+                <div className="mt-3 flex items-center">
+                  <div className="text-xs text-muted-foreground mr-2">Filter aktif:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {activeFilters.dateFilter && (
+                      <div className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+                        Periode: {date?.from ? format(date.from, "dd MMM yyyy") : ""} 
+                        {date?.to ? ` - ${format(date.to, "dd MMM yyyy")}` : ""}
+                        <button 
+                          onClick={() => handleDateRangeChange(undefined)} 
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="overflow-x-auto">
