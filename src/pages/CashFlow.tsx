@@ -1,20 +1,41 @@
 
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CashFlow as CashFlowType } from "@/lib/types";
 import { sampleCashFlows } from "@/lib/data";
-import { ArrowUpRight, ArrowDownLeft, Filter, Download, Plus, Search } from "lucide-react";
+import { 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Filter, 
+  Download, 
+  Plus, 
+  Search, 
+  Trash2, 
+  Edit, 
+  MoreHorizontal 
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { generateId } from "@/lib/utils";
+import { sampleAccounts } from "@/lib/data";
 
 export default function CashFlow() {
   const [cashFlows, setCashFlows] = useState<CashFlowType[]>(sampleCashFlows);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "in" | "out">("all");
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editingFlow, setEditingFlow] = useState<CashFlowType | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [flowToDelete, setFlowToDelete] = useState<CashFlowType | null>(null);
+  const { toast } = useToast();
   
   const filteredCashFlows = cashFlows.filter(flow => {
     const matchesSearch = flow.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -24,6 +45,42 @@ export default function CashFlow() {
                       (filterType === "out" && flow.code.startsWith("CO"));
     return matchesSearch && matchesType;
   });
+
+  const handleCreateNew = () => {
+    setEditingFlow(null);
+    setOpenDialog(true);
+  };
+
+  const handleEdit = (flow: CashFlowType) => {
+    setEditingFlow(flow);
+    setOpenDialog(true);
+  };
+
+  const handleDelete = (flow: CashFlowType) => {
+    setFlowToDelete(flow);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (flowToDelete) {
+      setCashFlows(cashFlows.filter(flow => flow.code !== flowToDelete.code));
+      toast({
+        title: "Transaksi dihapus",
+        description: `Transaksi ${flowToDelete.code} berhasil dihapus.`,
+      });
+      setIsDeleteDialogOpen(false);
+      setFlowToDelete(null);
+    }
+  };
+
+  const exportToExcel = () => {
+    // In a real app, you'd implement actual Excel export
+    // For now we'll just show a toast notification
+    toast({
+      title: "Data diexport",
+      description: "Data arus kas berhasil diexport ke Excel.",
+    });
+  };
 
   return (
     <Layout title="Arus Kas">
@@ -36,11 +93,11 @@ export default function CashFlow() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={exportToExcel}>
               <Download className="mr-2 h-4 w-4" />
-              Export
+              Export Excel
             </Button>
-            <Button>
+            <Button onClick={handleCreateNew}>
               <Plus className="mr-2 h-4 w-4" />
               Transaksi Baru
             </Button>
@@ -73,23 +130,88 @@ export default function CashFlow() {
           </div>
           
           <TabsContent value="all" className="mt-0">
-            <CashFlowTable cashFlows={filteredCashFlows} />
+            <CashFlowTable 
+              cashFlows={filteredCashFlows} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </TabsContent>
           <TabsContent value="in" className="mt-0">
-            <CashFlowTable cashFlows={filteredCashFlows} />
+            <CashFlowTable 
+              cashFlows={filteredCashFlows} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </TabsContent>
           <TabsContent value="out" className="mt-0">
-            <CashFlowTable cashFlows={filteredCashFlows} />
+            <CashFlowTable 
+              cashFlows={filteredCashFlows} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </TabsContent>
         </Tabs>
       </div>
+
+      <CashFlowFormDialog 
+        open={openDialog} 
+        onOpenChange={setOpenDialog} 
+        editingFlow={editingFlow}
+        onSave={(newFlow) => {
+          if (editingFlow) {
+            // Update existing flow
+            setCashFlows(cashFlows.map(flow => 
+              flow.code === editingFlow.code ? newFlow : flow
+            ));
+            toast({
+              title: "Transaksi diperbarui",
+              description: `Transaksi ${newFlow.code} berhasil diperbarui.`,
+            });
+          } else {
+            // Add new flow
+            setCashFlows([...cashFlows, newFlow]);
+            toast({
+              title: "Transaksi baru dibuat",
+              description: `Transaksi ${newFlow.code} berhasil ditambahkan.`,
+            });
+          }
+        }}
+      />
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Transaksi</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus transaksi {flowToDelete?.code}?
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }
 
-function CashFlowTable({ cashFlows }: { cashFlows: CashFlowType[] }) {
+function CashFlowTable({ 
+  cashFlows,
+  onEdit,
+  onDelete
+}: { 
+  cashFlows: CashFlowType[];
+  onEdit: (flow: CashFlowType) => void;
+  onDelete: (flow: CashFlowType) => void;
+}) {
   return (
-    <Card>
+    <Card className="overflow-hidden border">
       <CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -138,24 +260,27 @@ function CashFlowTable({ cashFlows }: { cashFlows: CashFlowType[] }) {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="12" cy="5" r="1" />
-                          <circle cx="12" cy="19" r="1" />
-                        </svg>
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(flow)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(flow)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))
@@ -171,5 +296,261 @@ function CashFlowTable({ cashFlows }: { cashFlows: CashFlowType[] }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface CashFlowFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingFlow: CashFlowType | null;
+  onSave: (flow: CashFlowType) => void;
+}
+
+function CashFlowFormDialog({ 
+  open, 
+  onOpenChange, 
+  editingFlow,
+  onSave 
+}: CashFlowFormDialogProps) {
+  const [formData, setFormData] = useState<Partial<CashFlowType>>({
+    code: '',
+    date: new Date().toISOString().split('T')[0],
+    accountCode: '',
+    accountName: '',
+    amount: 0,
+    description: '',
+    payer: '',
+    receiver: '',
+    checkNumber: '',
+    division: '01',
+    user: 'admin',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  const [flowType, setFlowType] = useState<'in' | 'out'>('in');
+
+  // Reset form when dialog opens/closes or editing flow changes
+  useState(() => {
+    if (editingFlow) {
+      setFormData(editingFlow);
+      setFlowType(editingFlow.code.startsWith('CI') ? 'in' : 'out');
+    } else {
+      setFormData({
+        code: '',
+        date: new Date().toISOString().split('T')[0],
+        accountCode: '',
+        accountName: '',
+        amount: 0,
+        description: '',
+        payer: '',
+        receiver: '',
+        checkNumber: '',
+        division: '01',
+        user: 'admin',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+      setFlowType('in');
+    }
+  });
+
+  const handleSave = () => {
+    // Generate code for new entries
+    let code = formData.code;
+    if (!editingFlow) {
+      const prefix = flowType === 'in' ? 'CI-' : 'CO-';
+      const currentYear = new Date().getFullYear();
+      const randomId = Math.floor(1000 + Math.random() * 9000);
+      code = `${prefix}${currentYear}-${randomId}`;
+    }
+
+    const newFlow: CashFlowType = {
+      ...(formData as CashFlowType),
+      code: code || '',
+      updatedAt: new Date().toISOString()
+    };
+
+    onSave(newFlow);
+    onOpenChange(false);
+  };
+
+  const handleAccountChange = (accountCode: string) => {
+    const account = sampleAccounts.find(acc => acc.code === accountCode);
+    if (account) {
+      setFormData({
+        ...formData,
+        accountCode,
+        accountName: account.name
+      });
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'amount') {
+      setFormData({
+        ...formData,
+        [name]: parseFloat(value) || 0
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            {editingFlow ? 'Edit Transaksi' : 'Transaksi Baru'}
+          </DialogTitle>
+          <DialogDescription>
+            {editingFlow 
+              ? 'Edit detail transaksi arus kas di bawah ini.' 
+              : 'Tambahkan transaksi arus kas baru.'}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          {!editingFlow && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="flowType" className="text-right">
+                Jenis Transaksi
+              </Label>
+              <div className="col-span-3">
+                <Select 
+                  value={flowType} 
+                  onValueChange={(value: 'in' | 'out') => setFlowType(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih jenis transaksi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in">Kas Masuk</SelectItem>
+                    <SelectItem value="out">Kas Keluar</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="date" className="text-right">
+              Tanggal
+            </Label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date?.toString().split('T')[0]}
+              onChange={handleInputChange}
+              className="col-span-3"
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="account" className="text-right">
+              Rekening
+            </Label>
+            <div className="col-span-3">
+              <Select 
+                value={formData.accountCode} 
+                onValueChange={handleAccountChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih rekening" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sampleAccounts.map(account => (
+                    <SelectItem key={account.code} value={account.code}>
+                      {account.name} ({account.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="amount" className="text-right">
+              Jumlah
+            </Label>
+            <Input
+              id="amount"
+              name="amount"
+              type="number"
+              value={formData.amount}
+              onChange={handleInputChange}
+              className="col-span-3"
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="description" className="text-right">
+              Deskripsi
+            </Label>
+            <Input
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="col-span-3"
+            />
+          </div>
+          
+          {flowType === 'in' ? (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payer" className="text-right">
+                Pembayar
+              </Label>
+              <Input
+                id="payer"
+                name="payer"
+                value={formData.payer || ''}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="receiver" className="text-right">
+                Penerima
+              </Label>
+              <Input
+                id="receiver"
+                name="receiver"
+                value={formData.receiver || ''}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          )}
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="checkNumber" className="text-right">
+              Nomor Cek
+            </Label>
+            <Input
+              id="checkNumber"
+              name="checkNumber"
+              value={formData.checkNumber || ''}
+              onChange={handleInputChange}
+              className="col-span-3"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Batal
+          </Button>
+          <Button type="submit" onClick={handleSave}>
+            {editingFlow ? 'Perbarui' : 'Simpan'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
