@@ -619,6 +619,18 @@ function CashFlowFormDialog({
     }
   };
 
+  const handlePaymentMethodChange = (value: string) => {
+    // Validate the payment method is one of the allowed values
+    const validPaymentMethod = (value === 'tunai' || value === 'transfer' || value === 'cek/giro') 
+      ? value as 'tunai' | 'transfer' | 'cek/giro'
+      : 'tunai'; // Default to 'tunai' if not valid
+      
+    setFormData({
+      ...formData,
+      paymentMethod: validPaymentMethod
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -699,7 +711,7 @@ function CashFlowFormDialog({
             <div className="col-span-3">
               <Select 
                 value={formData.paymentMethod || 'tunai'} 
-                onValueChange={(value) => setFormData({...formData, paymentMethod: value})}
+                onValueChange={handlePaymentMethodChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih metode pembayaran" />
