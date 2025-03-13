@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CashFlow } from "@/lib/types";
+import { CashFlow as CashFlowType } from "@/lib/types";
 import { sampleCashFlows } from "@/lib/data";
 import { ArrowUpRight, ArrowDownLeft, Filter, Download, Plus, Search } from "lucide-react";
 
 export default function CashFlow() {
-  const [cashFlows, setCashFlows] = useState<CashFlow[]>(sampleCashFlows);
+  const [cashFlows, setCashFlows] = useState<CashFlowType[]>(sampleCashFlows);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<"all" | "in" | "out">("all");
   
@@ -26,7 +26,7 @@ export default function CashFlow() {
   });
 
   return (
-    <Layout>
+    <Layout title="Arus Kas">
       <div className="container px-4 py-6 lg:px-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -87,7 +87,7 @@ export default function CashFlow() {
   );
 }
 
-function CashFlowTable({ cashFlows }: { cashFlows: CashFlow[] }) {
+function CashFlowTable({ cashFlows }: { cashFlows: CashFlowType[] }) {
   return (
     <Card>
       <CardContent className="p-0">
