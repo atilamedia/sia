@@ -1,20 +1,25 @@
 
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { BookText, Download, Filter, Plus, Search } from "lucide-react";
 import { JournalEntry, JournalType } from "@/lib/types";
 import { sampleJournalEntries, sampleJournalTypes } from "@/lib/data";
-import { BookText, Download, Filter, Plus, Search } from "lucide-react";
+import { JournalEntriesCard } from "@/components/journal/JournalEntriesCard";
+import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
+import { JournalTypesTable } from "@/components/journal/JournalTypesTable";
+import { toast } from "sonner";
 
 export default function Journal() {
   const [journals, setJournals] = useState<JournalEntry[]>(sampleJournalEntries);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedJournalType, setSelectedJournalType] = useState<string>("");
+  const [selectedJournalType, setSelectedJournalType] = useState<string>("all");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingEntries, setEditingEntries] = useState<JournalEntry[] | null>(null);
   
   // Group journal entries by code
   const journalGroups = journals.reduce((groups, entry) => {
@@ -31,12 +36,52 @@ export default function Journal() {
                          entries.some(entry => 
                          entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          entry.accountCode.toLowerCase().includes(searchTerm.toLowerCase()));
-      return matchesSearch;
+      
+      // If "all" is selected or no filter, show all journals
+      if (selectedJournalType === "all") {
+        return matchesSearch;
+      }
+      
+      // Filter by journal type (in a real app, you'd have a type field)
+      // For now, we'll just simulate this with the first digit of the code
+      const journalTypePrefix = selectedJournalType.charAt(0);
+      return matchesSearch && code.charAt(0) === journalTypePrefix;
     })
     .reduce((obj, [code, entries]) => {
       obj[code] = entries;
       return obj;
     }, {} as Record<string, JournalEntry[]>);
+
+  const handleAddJournal = () => {
+    setEditingEntries(null);
+    setIsFormOpen(true);
+  };
+
+  const handleEditJournal = (entries: JournalEntry[]) => {
+    setEditingEntries(entries);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteJournal = (code: string) => {
+    setJournals(journals.filter(journal => journal.code !== code));
+    toast.success(`Jurnal ${code} berhasil dihapus`);
+  };
+
+  const handleSaveJournal = (entries: JournalEntry[]) => {
+    if (editingEntries) {
+      // Update existing journal entries
+      const code = editingEntries[0].code;
+      const updatedJournals = journals.filter(journal => journal.code !== code);
+      setJournals([...updatedJournals, ...entries]);
+      toast.success(`Jurnal ${code} berhasil diperbarui`);
+    } else {
+      // Add new journal entries
+      setJournals([...journals, ...entries]);
+      toast.success(`Jurnal baru berhasil ditambahkan`);
+    }
+    setIsFormOpen(false);
+    setEditingEntries(null);
+  };
 
   return (
     <Layout>
@@ -53,7 +98,7 @@ export default function Journal() {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button>
+            <Button onClick={handleAddJournal}>
               <Plus className="mr-2 h-4 w-4" />
               Jurnal Baru
             </Button>
@@ -101,7 +146,13 @@ export default function Journal() {
           <TabsContent value="journals" className="mt-0 space-y-4">
             {Object.keys(filteredJournalGroups).length > 0 ? (
               Object.entries(filteredJournalGroups).map(([code, entries]) => (
-                <JournalEntriesCard key={code} code={code} entries={entries} />
+                <JournalEntriesCard 
+                  key={code} 
+                  code={code} 
+                  entries={entries} 
+                  onEdit={handleEditJournal}
+                  onDelete={handleDeleteJournal}
+                />
               ))
             ) : (
               <Card>
@@ -117,129 +168,24 @@ export default function Journal() {
           </TabsContent>
           
           <TabsContent value="journal-types" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Jenis Jurnal</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="h-10 px-4 text-left font-medium">Kode</th>
-                      <th className="h-10 px-4 text-left font-medium">Nama</th>
-                      <th className="h-10 px-4 text-center font-medium">Default</th>
-                      <th className="h-10 px-4 text-right font-medium">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sampleJournalTypes.map((type) => (
-                      <tr key={type.id} className="border-b transition-colors hover:bg-muted/50">
-                        <td className="p-4 font-medium">{type.id}</td>
-                        <td className="p-4">{type.name}</td>
-                        <td className="p-4 text-center">
-                          {type.isDefault ? (
-                            <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                              Ya
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                              Tidak
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-4 text-right">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="24"
-                              height="24"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4"
-                            >
-                              <circle cx="12" cy="12" r="1" />
-                              <circle cx="12" cy="5" r="1" />
-                              <circle cx="12" cy="19" r="1" />
-                            </svg>
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
+            <JournalTypesTable journalTypes={sampleJournalTypes} />
           </TabsContent>
         </Tabs>
       </div>
+      
+      {isFormOpen && (
+        <JournalEntryForm
+          isOpen={isFormOpen}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingEntries(null);
+          }}
+          onSave={handleSaveJournal}
+          journalTypes={sampleJournalTypes}
+          initialEntries={editingEntries || undefined}
+          isEditing={!!editingEntries}
+        />
+      )}
     </Layout>
-  );
-}
-
-function JournalEntriesCard({ code, entries }: { code: string, entries: JournalEntry[] }) {
-  const firstEntry = entries[0];
-  
-  // Calculate totals
-  const totalDebit = entries.reduce((sum, entry) => sum + entry.debit, 0);
-  const totalCredit = entries.reduce((sum, entry) => sum + entry.credit, 0);
-  
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-muted/50 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookText className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">{code}</CardTitle>
-          </div>
-          <div className="flex flex-col items-end text-sm">
-            <span>{formatDate(firstEntry.date)}</span>
-            <span className="text-muted-foreground">Oleh: {firstEntry.user}</span>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="h-10 px-4 text-left font-medium">Kode Akun</th>
-                <th className="h-10 px-4 text-left font-medium">Deskripsi</th>
-                <th className="h-10 px-4 text-right font-medium">Debit</th>
-                <th className="h-10 px-4 text-right font-medium">Kredit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr key={`${entry.code}-${entry.accountCode}-${index}`} className="border-b transition-colors hover:bg-muted/50">
-                  <td className="p-4 font-medium">{entry.accountCode}</td>
-                  <td className="p-4">{entry.description}</td>
-                  <td className="p-4 text-right">
-                    {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                  </td>
-                  <td className="p-4 text-right">
-                    {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                  </td>
-                </tr>
-              ))}
-              <tr className="bg-muted/20 font-medium">
-                <td colSpan={2} className="p-4 text-right">Total</td>
-                <td className="p-4 text-right">{formatCurrency(totalDebit)}</td>
-                <td className="p-4 text-right">{formatCurrency(totalCredit)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="flex justify-end p-4 border-t">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">Detail</Button>
-            <Button variant="outline" size="sm">Edit</Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
