@@ -36,6 +36,7 @@ export interface CashFlow {
   division?: string;
   createdAt: string;
   updatedAt: string;
+  paymentMethod?: 'tunai' | 'transfer' | 'cek/giro'; // Added payment method property
 }
 
 export interface Account {
