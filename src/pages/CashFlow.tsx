@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,7 +46,7 @@ export default function CashFlow() {
   
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
-  const [accountFilter, setAccountFilter] = useState<string>("");
+  const [accountFilter, setAccountFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   
   const filteredCashFlows = cashFlows.filter(flow => {
@@ -60,7 +61,7 @@ export default function CashFlow() {
     const matchesDateFrom = !dateFrom || flowDate >= dateFrom;
     const matchesDateTo = !dateTo || flowDate <= dateTo;
     
-    const matchesAccount = !accountFilter || flow.accountCode === accountFilter;
+    const matchesAccount = accountFilter === "all" || flow.accountCode === accountFilter;
     
     return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && matchesAccount;
   });
@@ -68,7 +69,7 @@ export default function CashFlow() {
   const activeFiltersCount = [
     dateFrom !== undefined, 
     dateTo !== undefined, 
-    accountFilter !== ""
+    accountFilter !== "all"
   ].filter(Boolean).length;
 
   const handleCreateNew = () => {
@@ -108,7 +109,7 @@ export default function CashFlow() {
   const clearFilters = () => {
     setDateFrom(undefined);
     setDateTo(undefined);
-    setAccountFilter("");
+    setAccountFilter("all");
   };
 
   return (
@@ -238,7 +239,7 @@ export default function CashFlow() {
                         <SelectValue placeholder="Semua rekening" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Semua rekening</SelectItem>
+                        <SelectItem value="all">Semua rekening</SelectItem>
                         {sampleAccounts.map(account => (
                           <SelectItem key={account.code} value={account.code}>
                             {account.name} ({account.code})
@@ -273,10 +274,10 @@ export default function CashFlow() {
                         <X className="h-3 w-3 cursor-pointer" onClick={() => setDateTo(undefined)} />
                       </Badge>
                     )}
-                    {accountFilter && (
+                    {accountFilter !== "all" && (
                       <Badge variant="outline" className="flex items-center gap-1">
                         Rekening: {sampleAccounts.find(a => a.code === accountFilter)?.name || accountFilter}
-                        <X className="h-3 w-3 cursor-pointer" onClick={() => setAccountFilter("")} />
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setAccountFilter("all")} />
                       </Badge>
                     )}
                   </div>
@@ -706,4 +707,3 @@ function CashFlowFormDialog({
     </Dialog>
   );
 }
-
