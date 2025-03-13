@@ -1,11 +1,14 @@
-
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Download } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, AreaChart, Area, Tooltip } from "recharts";
+import { Download, ArrowUp, ArrowDown, Wallet, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/data";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const monthlyData = [
   { name: "Jan", income: 2400, expense: 1398 },
@@ -22,6 +25,35 @@ const categoryData = [
   { name: "Pengeluaran", value: 18000, color: "#ef4444" },
   { name: "Aset", value: 35000, color: "#10b981" },
   { name: "Utang", value: 8000, color: "#f59e0b" },
+];
+
+const incomeCategories = [
+  { name: "Penjualan Produk", value: 14500000, color: "#4f46e5" },
+  { name: "Jasa Konsultasi", value: 7200000, color: "#8b5cf6" },
+  { name: "Pendapatan Bunga", value: 1800000, color: "#a78bfa" },
+  { name: "Investasi", value: 1500000, color: "#c4b5fd" },
+];
+
+const expenseCategories = [
+  { name: "Beban Gaji", value: 8500000, color: "#ef4444" },
+  { name: "Peralatan Kantor", value: 3200000, color: "#f87171" },
+  { name: "Utilitas", value: 2700000, color: "#fca5a5" },
+  { name: "Sewa", value: 3600000, color: "#fecaca" },
+];
+
+const quarterlyData = [
+  { name: "Q1", income: 12000000, expense: 8000000 },
+  { name: "Q2", income: 15000000, expense: 11000000 },
+  { name: "Q3", income: 18000000, expense: 13000000 },
+  { name: "Q4", income: 25000000, expense: 16000000 },
+];
+
+const topTransactions = [
+  { id: 1, date: "15 Mei 2023", description: "Penjualan Produk A", category: "Pendapatan", amount: 5000000, type: "income" },
+  { id: 2, date: "18 Mei 2023", description: "Pembayaran Gaji", category: "Beban", amount: 8500000, type: "expense" },
+  { id: 3, date: "22 Mei 2023", description: "Jasa Konsultasi", category: "Pendapatan", amount: 3500000, type: "income" },
+  { id: 4, date: "25 Mei 2023", description: "Sewa Kantor", category: "Beban", amount: 3600000, type: "expense" },
+  { id: 5, date: "28 Mei 2023", description: "Penjualan Produk B", category: "Pendapatan", amount: 4200000, type: "income" },
 ];
 
 const Reports = () => {
@@ -154,18 +186,250 @@ const Reports = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="income-expense">
+        <TabsContent value="income-expense" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Pendapatan & Pengeluaran</h2>
+            <div className="flex items-center gap-2">
+              <Select defaultValue="monthly">
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Pilih periode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Bulanan</SelectItem>
+                  <SelectItem value="quarterly">Kuartal</SelectItem>
+                  <SelectItem value="yearly">Tahunan</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Rasio Pendapatan & Pengeluaran</CardTitle>
+                <CardDescription>
+                  Perbandingan antara pendapatan dan pengeluaran
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col p-4 rounded-lg bg-indigo-50">
+                      <div className="flex items-center gap-2">
+                        <ArrowUp className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-indigo-600">Total Pendapatan</span>
+                      </div>
+                      <p className="mt-2 text-2xl font-bold">Rp25.000.000</p>
+                      <Badge className="mt-2 self-start bg-indigo-100 text-indigo-800 hover:bg-indigo-100">+15%</Badge>
+                    </div>
+                    <div className="flex flex-col p-4 rounded-lg bg-red-50">
+                      <div className="flex items-center gap-2">
+                        <ArrowDown className="h-5 w-5 text-red-600" />
+                        <span className="text-sm font-medium text-red-600">Total Pengeluaran</span>
+                      </div>
+                      <p className="mt-2 text-2xl font-bold">Rp18.000.000</p>
+                      <Badge className="mt-2 self-start bg-red-100 text-red-800 hover:bg-red-100">-5%</Badge>
+                    </div>
+                  </div>
+                  <div className="h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={quarterlyData}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.1} />
+                          </linearGradient>
+                          <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value) => formatCurrency(value as number)}
+                          labelFormatter={(label) => `Kuartal ${label}`}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="income"
+                          name="Pendapatan"
+                          stroke="#4f46e5"
+                          fillOpacity={1}
+                          fill="url(#colorIncome)"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="expense"
+                          name="Pengeluaran"
+                          stroke="#ef4444"
+                          fillOpacity={1}
+                          fill="url(#colorExpense)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Laba Bersih</CardTitle>
+                <CardDescription>
+                  Tren laba bersih (pendapatan - pengeluaran)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center gap-2 p-4 rounded-lg bg-green-50">
+                    <Wallet className="h-5 w-5 text-green-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-600">Laba Bersih</p>
+                      <p className="text-2xl font-bold">Rp7.000.000</p>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100">+25%</Badge>
+                  </div>
+                  <div className="h-[250px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthlyData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip
+                          formatter={(value, name) => [
+                            formatCurrency(Number(value)),
+                            name === "value" ? "Laba Bersih" : name,
+                          ]}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey={(data) => data.income - data.expense}
+                          name="Laba Bersih"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Detail Pendapatan</CardTitle>
+                <CardDescription>
+                  Rincian pendapatan berdasarkan kategori
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={incomeCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {incomeCategories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Legend layout="vertical" verticalAlign="middle" align="right" />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Detail Pengeluaran</CardTitle>
+                <CardDescription>
+                  Rincian pengeluaran berdasarkan kategori
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={expenseCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {expenseCategories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Legend layout="vertical" verticalAlign="middle" align="right" />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Pendapatan & Pengeluaran</CardTitle>
+              <CardTitle>Transaksi Utama</CardTitle>
               <CardDescription>
-                Detail pendapatan dan pengeluaran berdasarkan kategori
+                Daftar transaksi dengan nilai terbesar
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Halaman detail pendapatan dan pengeluaran akan ditampilkan di sini.
-              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Deskripsi</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead className="text-right">Jumlah</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topTransactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>{transaction.date}</TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>
+                        <Badge className={transaction.type === 'income' 
+                          ? 'bg-indigo-100 text-indigo-800 hover:bg-indigo-100' 
+                          : 'bg-red-100 text-red-800 hover:bg-red-100'}>
+                          {transaction.category}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className={`text-right ${transaction.type === 'income' ? 'text-indigo-600' : 'text-red-600'}`}>
+                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
@@ -207,3 +471,4 @@ const Reports = () => {
 };
 
 export default Reports;
+
