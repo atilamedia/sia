@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, AreaChart, Area, Tooltip } from "recharts";
-import { Download, ArrowUp, ArrowDown, Wallet, Filter } from "lucide-react";
+import { Download, ArrowUp, ArrowDown, Wallet, Filter, FileText, Building, Landmark, Banknote, Coins, Database, ShieldCheck, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/data";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,6 +56,44 @@ const topTransactions = [
   { id: 5, date: "28 Mei 2023", description: "Penjualan Produk B", category: "Pendapatan", amount: 4200000, type: "income" },
 ];
 
+// Balance Sheet Data
+const assetCategories = [
+  { name: "Kas & Setara Kas", value: 12500000, percentage: 25, color: "#4f46e5" },
+  { name: "Piutang Usaha", value: 8700000, percentage: 17.4, color: "#8b5cf6" },
+  { name: "Persediaan", value: 15300000, percentage: 30.6, color: "#a78bfa" },
+  { name: "Investasi", value: 9500000, percentage: 19, color: "#c4b5fd" },
+  { name: "Aset Tetap", value: 4000000, percentage: 8, color: "#818cf8" },
+];
+
+const liabilityCategories = [
+  { name: "Utang Usaha", value: 6300000, percentage: 52.5, color: "#ef4444" },
+  { name: "Utang Bank", value: 3500000, percentage: 29.2, color: "#f87171" },
+  { name: "Utang Pajak", value: 1200000, percentage: 10, color: "#fca5a5" },
+  { name: "Liabilitas Lainnya", value: 1000000, percentage: 8.3, color: "#fecaca" },
+];
+
+const equityCategories = [
+  { name: "Modal Disetor", value: 25000000, percentage: 64.1, color: "#10b981" },
+  { name: "Laba Ditahan", value: 14000000, percentage: 35.9, color: "#34d399" },
+];
+
+const balanceSheetSummary = {
+  totalAssets: 50000000,
+  totalLiabilities: 12000000,
+  totalEquity: 38000000,
+  currentRatio: 3.04,
+  debtToEquityRatio: 0.32,
+  quickRatio: 1.76
+};
+
+const balanceSheetTrend = [
+  { month: "Jan", assets: 43000000, liabilities: 10500000, equity: 32500000 },
+  { month: "Feb", assets: 44500000, liabilities: 11200000, equity: 33300000 },
+  { month: "Mar", assets: 46000000, liabilities: 11800000, equity: 34200000 },
+  { month: "Apr", assets: 47500000, liabilities: 12500000, equity: 35000000 },
+  { month: "May", assets: 50000000, liabilities: 12000000, equity: 38000000 },
+];
+
 const Reports = () => {
   return (
     <Layout title="Laporan">
@@ -75,7 +113,7 @@ const Reports = () => {
           <TabsTrigger value="cash-flow">Arus Kas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+      <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -186,7 +224,7 @@ const Reports = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="income-expense" className="space-y-6">
+      <TabsContent value="income-expense" className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Pendapatan & Pengeluaran</h2>
             <div className="flex items-center gap-2">
@@ -434,41 +472,171 @@ const Reports = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="balance">
+      <TabsContent value="balance" className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Neraca Keuangan</h2>
+          <div className="flex items-center gap-2">
+            <Select defaultValue="may23">
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Pilih periode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="jan23">Januari 2023</SelectItem>
+                <SelectItem value="feb23">Februari 2023</SelectItem>
+                <SelectItem value="mar23">Maret 2023</SelectItem>
+                <SelectItem value="apr23">April 2023</SelectItem>
+                <SelectItem value="may23">Mei 2023</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Unduh Neraca
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="bg-indigo-50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Database className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="text-lg text-indigo-800">Total Aset</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-indigo-900">{formatCurrency(balanceSheetSummary.totalAssets)}</p>
+              <p className="text-sm text-indigo-700 mt-1">Meningkat 5.3% dari bulan sebelumnya</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-red-50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-red-600" />
+                <CardTitle className="text-lg text-red-800">Total Liabilitas</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-red-900">{formatCurrency(balanceSheetSummary.totalLiabilities)}</p>
+              <p className="text-sm text-red-700 mt-1">Menurun 4% dari bulan sebelumnya</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-green-50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-green-600" />
+                <CardTitle className="text-lg text-green-800">Total Ekuitas</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-green-900">{formatCurrency(balanceSheetSummary.totalEquity)}</p>
+              <p className="text-sm text-green-700 mt-1">Meningkat 8.6% dari bulan sebelumnya</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Neraca Keuangan</CardTitle>
+              <CardTitle>Tren Neraca Keuangan</CardTitle>
               <CardDescription>
-                Laporan neraca untuk periode saat ini
+                Perbandingan aset, liabilitas dan ekuitas dalam 5 bulan terakhir
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Detail neraca keuangan akan ditampilkan di sini.
-              </p>
+              <div className="h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={balanceSheetTrend} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`} />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Legend />
+                    <Bar dataKey="assets" name="Aset" stackId="a" fill="#4f46e5" />
+                    <Bar dataKey="liabilities" name="Liabilitas" stackId="b" fill="#ef4444" />
+                    <Bar dataKey="equity" name="Ekuitas" stackId="c" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="cash-flow">
           <Card>
             <CardHeader>
-              <CardTitle>Laporan Arus Kas</CardTitle>
+              <CardTitle>Rasio Keuangan</CardTitle>
               <CardDescription>
-                Analisis arus kas untuk periode saat ini
+                Indikator kinerja keuangan perusahaan
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Detail laporan arus kas akan ditampilkan di sini.
-              </p>
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-indigo-50 p-4">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-indigo-600" />
+                      <p className="text-sm font-medium text-indigo-600">Current Ratio</p>
+                    </div>
+                    <p className="mt-2 text-2xl font-bold text-indigo-900">{balanceSheetSummary.currentRatio.toFixed(2)}</p>
+                    <p className="text-xs text-indigo-700 mt-1">
+                      {balanceSheetSummary.currentRatio > 2 ? 'Sangat Baik' : balanceSheetSummary.currentRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
+                    </p>
+                  </div>
+                  
+                  <div className="rounded-lg bg-amber-50 p-4">
+                    <div className="flex items-center gap-2">
+                      <List className="h-5 w-5 text-amber-600" />
+                      <p className="text-sm font-medium text-amber-600">Debt to Equity Ratio</p>
+                    </div>
+                    <p className="mt-2 text-2xl font-bold text-amber-900">{balanceSheetSummary.debtToEquityRatio.toFixed(2)}</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      {balanceSheetSummary.debtToEquityRatio < 0.5 ? 'Sangat Baik' : balanceSheetSummary.debtToEquityRatio < 1 ? 'Baik' : 'Perlu Perhatian'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="rounded-lg bg-cyan-50 p-4">
+                  <div className="flex items-center gap-2">
+                    <Landmark className="h-5 w-5 text-cyan-600" />
+                    <p className="text-sm font-medium text-cyan-600">Quick Ratio</p>
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-cyan-900">{balanceSheetSummary.quickRatio.toFixed(2)}</p>
+                  <div className="mt-2 w-full bg-cyan-200 rounded-full h-2.5">
+                    <div className="bg-cyan-600 h-2.5 rounded-full" style={{ width: `${Math.min(balanceSheetSummary.quickRatio * 50, 100)}%` }}></div>
+                  </div>
+                  <p className="text-xs text-cyan-700 mt-1">
+                    {balanceSheetSummary.quickRatio > 1.5 ? 'Sangat Baik' : balanceSheetSummary.quickRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
-    </Layout>
-  );
-};
+        </div>
 
-export default Reports;
-
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Komposisi Aset</CardTitle>
+              <CardDescription>
+                Distribusi aset perusahaan
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={assetCategories}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {assetCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value as number
