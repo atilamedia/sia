@@ -7,6 +7,7 @@ import {
   Calendar
 } from "lucide-react";
 import { format } from "date-fns";
+import { id } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
 export function Header({ title }: { title: string }) {
@@ -54,7 +55,7 @@ export function Header({ title }: { title: string }) {
         {/* Date display */}
         <div className="hidden md:flex items-center text-sm text-muted-foreground">
           <Calendar className="w-4 h-4 mr-2" />
-          {format(new Date(), "EEEE, dd MMMM yyyy")}
+          {format(new Date(), "EEEE, dd MMMM yyyy", { locale: id })}
         </div>
         
         {/* Notifications */}
