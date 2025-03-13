@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import * as XLSX from 'xlsx';
 
 export default function CashFlow() {
   const [cashFlows, setCashFlows] = useState<CashFlowType[]>(sampleCashFlows);
@@ -48,6 +48,7 @@ export default function CashFlow() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [accountFilter, setAccountFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [cashTypeFilter, setCashTypeFilter] = useState("all");
   
   const filteredCashFlows = cashFlows.filter(flow => {
     const matchesSearch = flow.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -63,13 +64,18 @@ export default function CashFlow() {
     
     const matchesAccount = accountFilter === "all" || flow.accountCode === accountFilter;
     
-    return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && matchesAccount;
+    const matchesCashType = cashTypeFilter === "all" || 
+                          (flow.paymentMethod && flow.paymentMethod === cashTypeFilter);
+    
+    return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && 
+           matchesAccount && matchesCashType;
   });
 
   const activeFiltersCount = [
     dateFrom !== undefined, 
     dateTo !== undefined, 
-    accountFilter !== "all"
+    accountFilter !== "all",
+    cashTypeFilter !== "all"
   ].filter(Boolean).length;
 
   const handleCreateNew = () => {
@@ -100,16 +106,49 @@ export default function CashFlow() {
   };
 
   const exportToExcel = () => {
-    toast({
-      title: "Data diexport",
-      description: "Data arus kas berhasil diexport ke Excel.",
-    });
+    try {
+      const exportData = filteredCashFlows.map(flow => ({
+        'Kode': flow.code,
+        'Tanggal': formatDate(flow.date),
+        'Rekening': `${flow.accountName} (${flow.accountCode})`,
+        'Deskripsi': flow.description,
+        'Jenis': flow.code.startsWith('CI') ? 'Kas Masuk' : 'Kas Keluar',
+        'Jumlah': flow.amount,
+        'Pembayar': flow.payer || '-',
+        'Penerima': flow.receiver || '-',
+        'Nomor Cek': flow.checkNumber || '-',
+        'Metode Pembayaran': flow.paymentMethod || '-',
+        'Dibuat Pada': formatDate(flow.createdAt),
+        'Diperbarui Pada': formatDate(flow.updatedAt)
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Arus Kas");
+      
+      const fileName = `Laporan_Arus_Kas_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      
+      toast({
+        title: "Data diexport",
+        description: "Data arus kas berhasil diexport ke Excel.",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export gagal",
+        description: "Terjadi kesalahan saat mengexport data.",
+        variant: "destructive"
+      });
+    }
   };
 
   const clearFilters = () => {
     setDateFrom(undefined);
     setDateTo(undefined);
     setAccountFilter("all");
+    setCashTypeFilter("all");
   };
 
   return (
@@ -249,6 +288,24 @@ export default function CashFlow() {
                     </Select>
                   </div>
                   
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="cash-type-filter">Jenis Kas</Label>
+                    <Select
+                      value={cashTypeFilter}
+                      onValueChange={setCashTypeFilter}
+                    >
+                      <SelectTrigger id="cash-type-filter">
+                        <SelectValue placeholder="Semua jenis kas" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Semua jenis kas</SelectItem>
+                        <SelectItem value="tunai">Tunai</SelectItem>
+                        <SelectItem value="transfer">Transfer</SelectItem>
+                        <SelectItem value="cek/giro">Cek/Giro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button
                     variant="outline" 
                     size="icon" 
@@ -278,6 +335,12 @@ export default function CashFlow() {
                       <Badge variant="outline" className="flex items-center gap-1">
                         Rekening: {sampleAccounts.find(a => a.code === accountFilter)?.name || accountFilter}
                         <X className="h-3 w-3 cursor-pointer" onClick={() => setAccountFilter("all")} />
+                      </Badge>
+                    )}
+                    {cashTypeFilter !== "all" && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        Jenis Kas: {cashTypeFilter}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setCashTypeFilter("all")} />
                       </Badge>
                     )}
                   </div>
@@ -479,6 +542,7 @@ function CashFlowFormDialog({
     checkNumber: '',
     division: '01',
     user: 'admin',
+    paymentMethod: 'tunai',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -501,6 +565,7 @@ function CashFlowFormDialog({
         checkNumber: '',
         division: '01',
         user: 'admin',
+        paymentMethod: 'tunai',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -622,6 +687,27 @@ function CashFlowFormDialog({
                       {account.name} ({account.code})
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="paymentMethod" className="text-right">
+              Metode Pembayaran
+            </Label>
+            <div className="col-span-3">
+              <Select 
+                value={formData.paymentMethod || 'tunai'} 
+                onValueChange={(value) => setFormData({...formData, paymentMethod: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih metode pembayaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tunai">Tunai</SelectItem>
+                  <SelectItem value="transfer">Transfer</SelectItem>
+                  <SelectItem value="cek/giro">Cek/Giro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
