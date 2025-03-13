@@ -10,7 +10,7 @@ import { Account } from "@/lib/types";
 import { Download, Plus, Search, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AccountForm, AccountFormValues } from "@/components/accounts/AccountForm";
 import { DeleteAccountDialog } from "@/components/accounts/DeleteAccountDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -204,6 +204,9 @@ export default function Accounts() {
             <DialogTitle>
               {currentAccount ? "Edit Rekening" : "Tambah Rekening Baru"}
             </DialogTitle>
+            <DialogDescription>
+              {currentAccount ? "Edit detail rekening yang sudah ada" : "Masukkan informasi rekening baru"}
+            </DialogDescription>
           </DialogHeader>
           <AccountForm
             account={currentAccount || undefined}

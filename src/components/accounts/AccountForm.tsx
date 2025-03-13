@@ -154,7 +154,7 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">-</SelectItem>
+                    <SelectItem value="-">-</SelectItem>
                     {parentAccounts.map(parent => (
                       <SelectItem key={parent.code} value={parent.code}>
                         {parent.code} - {parent.name}
