@@ -83,7 +83,8 @@ export default function Journal() {
                   <SelectValue placeholder="Jenis Jurnal" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Semua</SelectItem>
+                  {/* Changed empty string to "all" to avoid the empty value error */}
+                  <SelectItem value="all">Semua</SelectItem>
                   {sampleJournalTypes.map((type) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.name}
