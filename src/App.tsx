@@ -10,6 +10,7 @@ import CashIn from "./pages/CashIn";
 import CashOut from "./pages/CashOut";
 import Journal from "./pages/Journal";
 import NotFound from "./pages/NotFound";
+import Accounts from "./pages/Accounts";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/cash-in" element={<CashIn />} />
           <Route path="/cash-out" element={<CashOut />} />
           <Route path="/journal" element={<Journal />} />
+          <Route path="/accounts" element={<Accounts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
