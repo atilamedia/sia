@@ -1,3 +1,4 @@
+
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -113,7 +114,7 @@ const Reports = () => {
           <TabsTrigger value="cash-flow">Arus Kas</TabsTrigger>
         </TabsList>
 
-      <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
@@ -224,7 +225,7 @@ const Reports = () => {
           </Card>
         </TabsContent>
 
-      <TabsContent value="income-expense" className="space-y-6">
+        <TabsContent value="income-expense" className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Pendapatan & Pengeluaran</h2>
             <div className="flex items-center gap-2">
@@ -472,171 +473,293 @@ const Reports = () => {
           </Card>
         </TabsContent>
 
-      <TabsContent value="balance" className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Neraca Keuangan</h2>
-          <div className="flex items-center gap-2">
-            <Select defaultValue="may23">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Pilih periode" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="jan23">Januari 2023</SelectItem>
-                <SelectItem value="feb23">Februari 2023</SelectItem>
-                <SelectItem value="mar23">Maret 2023</SelectItem>
-                <SelectItem value="apr23">April 2023</SelectItem>
-                <SelectItem value="may23">Mei 2023</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Download className="h-4 w-4" />
-              Unduh Neraca
-            </Button>
+        <TabsContent value="balance" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Neraca Keuangan</h2>
+            <div className="flex items-center gap-2">
+              <Select defaultValue="may23">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Pilih periode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="jan23">Januari 2023</SelectItem>
+                  <SelectItem value="feb23">Februari 2023</SelectItem>
+                  <SelectItem value="mar23">Maret 2023</SelectItem>
+                  <SelectItem value="apr23">April 2023</SelectItem>
+                  <SelectItem value="may23">Mei 2023</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                Unduh Neraca
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="bg-indigo-50">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-indigo-600" />
-                <CardTitle className="text-lg text-indigo-800">Total Aset</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-indigo-900">{formatCurrency(balanceSheetSummary.totalAssets)}</p>
-              <p className="text-sm text-indigo-700 mt-1">Meningkat 5.3% dari bulan sebelumnya</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-red-50">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-red-600" />
-                <CardTitle className="text-lg text-red-800">Total Liabilitas</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-red-900">{formatCurrency(balanceSheetSummary.totalLiabilities)}</p>
-              <p className="text-sm text-red-700 mt-1">Menurun 4% dari bulan sebelumnya</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-green-50">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-green-600" />
-                <CardTitle className="text-lg text-green-800">Total Ekuitas</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-green-900">{formatCurrency(balanceSheetSummary.totalEquity)}</p>
-              <p className="text-sm text-green-700 mt-1">Meningkat 8.6% dari bulan sebelumnya</p>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card className="bg-indigo-50">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Database className="h-5 w-5 text-indigo-600" />
+                  <CardTitle className="text-lg text-indigo-800">Total Aset</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-indigo-900">{formatCurrency(balanceSheetSummary.totalAssets)}</p>
+                <p className="text-sm text-indigo-700 mt-1">Meningkat 5.3% dari bulan sebelumnya</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-red-50">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-red-600" />
+                  <CardTitle className="text-lg text-red-800">Total Liabilitas</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-red-900">{formatCurrency(balanceSheetSummary.totalLiabilities)}</p>
+                <p className="text-sm text-red-700 mt-1">Menurun 4% dari bulan sebelumnya</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-green-50">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Building className="h-5 w-5 text-green-600" />
+                  <CardTitle className="text-lg text-green-800">Total Ekuitas</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-green-900">{formatCurrency(balanceSheetSummary.totalEquity)}</p>
+                <p className="text-sm text-green-700 mt-1">Meningkat 8.6% dari bulan sebelumnya</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tren Neraca Keuangan</CardTitle>
-              <CardDescription>
-                Perbandingan aset, liabilitas dan ekuitas dalam 5 bulan terakhir
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={balanceSheetTrend} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`} />
-                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
-                    <Legend />
-                    <Bar dataKey="assets" name="Aset" stackId="a" fill="#4f46e5" />
-                    <Bar dataKey="liabilities" name="Liabilitas" stackId="b" fill="#ef4444" />
-                    <Bar dataKey="equity" name="Ekuitas" stackId="c" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tren Neraca Keuangan</CardTitle>
+                <CardDescription>
+                  Perbandingan aset, liabilitas dan ekuitas dalam 5 bulan terakhir
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={balanceSheetTrend} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis tickFormatter={(value) => `${(value / 1000000).toFixed(0)}jt`} />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                      <Bar dataKey="assets" name="Aset" stackId="a" fill="#4f46e5" />
+                      <Bar dataKey="liabilities" name="Liabilitas" stackId="b" fill="#ef4444" />
+                      <Bar dataKey="equity" name="Ekuitas" stackId="c" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Rasio Keuangan</CardTitle>
-              <CardDescription>
-                Indikator kinerja keuangan perusahaan
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg bg-indigo-50 p-4">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5 text-indigo-600" />
-                      <p className="text-sm font-medium text-indigo-600">Current Ratio</p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Rasio Keuangan</CardTitle>
+                <CardDescription>
+                  Indikator kinerja keuangan perusahaan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-lg bg-indigo-50 p-4">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-indigo-600" />
+                        <p className="text-sm font-medium text-indigo-600">Current Ratio</p>
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-indigo-900">{balanceSheetSummary.currentRatio.toFixed(2)}</p>
+                      <p className="text-xs text-indigo-700 mt-1">
+                        {balanceSheetSummary.currentRatio > 2 ? 'Sangat Baik' : balanceSheetSummary.currentRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
+                      </p>
                     </div>
-                    <p className="mt-2 text-2xl font-bold text-indigo-900">{balanceSheetSummary.currentRatio.toFixed(2)}</p>
-                    <p className="text-xs text-indigo-700 mt-1">
-                      {balanceSheetSummary.currentRatio > 2 ? 'Sangat Baik' : balanceSheetSummary.currentRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
-                    </p>
+                    
+                    <div className="rounded-lg bg-amber-50 p-4">
+                      <div className="flex items-center gap-2">
+                        <List className="h-5 w-5 text-amber-600" />
+                        <p className="text-sm font-medium text-amber-600">Debt to Equity Ratio</p>
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-amber-900">{balanceSheetSummary.debtToEquityRatio.toFixed(2)}</p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        {balanceSheetSummary.debtToEquityRatio < 0.5 ? 'Sangat Baik' : balanceSheetSummary.debtToEquityRatio < 1 ? 'Baik' : 'Perlu Perhatian'}
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="rounded-lg bg-amber-50 p-4">
+                  <div className="rounded-lg bg-cyan-50 p-4">
                     <div className="flex items-center gap-2">
-                      <List className="h-5 w-5 text-amber-600" />
-                      <p className="text-sm font-medium text-amber-600">Debt to Equity Ratio</p>
+                      <Landmark className="h-5 w-5 text-cyan-600" />
+                      <p className="text-sm font-medium text-cyan-600">Quick Ratio</p>
                     </div>
-                    <p className="mt-2 text-2xl font-bold text-amber-900">{balanceSheetSummary.debtToEquityRatio.toFixed(2)}</p>
-                    <p className="text-xs text-amber-700 mt-1">
-                      {balanceSheetSummary.debtToEquityRatio < 0.5 ? 'Sangat Baik' : balanceSheetSummary.debtToEquityRatio < 1 ? 'Baik' : 'Perlu Perhatian'}
+                    <p className="mt-2 text-2xl font-bold text-cyan-900">{balanceSheetSummary.quickRatio.toFixed(2)}</p>
+                    <div className="mt-2 w-full bg-cyan-200 rounded-full h-2.5">
+                      <div className="bg-cyan-600 h-2.5 rounded-full" style={{ width: `${Math.min(balanceSheetSummary.quickRatio * 50, 100)}%` }}></div>
+                    </div>
+                    <p className="text-xs text-cyan-700 mt-1">
+                      {balanceSheetSummary.quickRatio > 1.5 ? 'Sangat Baik' : balanceSheetSummary.quickRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
                     </p>
                   </div>
                 </div>
-                
-                <div className="rounded-lg bg-cyan-50 p-4">
-                  <div className="flex items-center gap-2">
-                    <Landmark className="h-5 w-5 text-cyan-600" />
-                    <p className="text-sm font-medium text-cyan-600">Quick Ratio</p>
-                  </div>
-                  <p className="mt-2 text-2xl font-bold text-cyan-900">{balanceSheetSummary.quickRatio.toFixed(2)}</p>
-                  <div className="mt-2 w-full bg-cyan-200 rounded-full h-2.5">
-                    <div className="bg-cyan-600 h-2.5 rounded-full" style={{ width: `${Math.min(balanceSheetSummary.quickRatio * 50, 100)}%` }}></div>
-                  </div>
-                  <p className="text-xs text-cyan-700 mt-1">
-                    {balanceSheetSummary.quickRatio > 1.5 ? 'Sangat Baik' : balanceSheetSummary.quickRatio > 1 ? 'Baik' : 'Perlu Perhatian'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card>
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Komposisi Aset</CardTitle>
+                <CardDescription>
+                  Distribusi aset perusahaan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={assetCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {assetCategories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Komposisi Liabilitas</CardTitle>
+                <CardDescription>
+                  Distribusi liabilitas perusahaan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={liabilityCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {liabilityCategories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Komposisi Ekuitas</CardTitle>
+                <CardDescription>
+                  Distribusi modal perusahaan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={equityCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {equityCategories.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="cash-flow" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Arus Kas</h2>
+            <div className="flex items-center gap-2">
+              <Select defaultValue="may23">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Pilih periode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="jan23">Januari 2023</SelectItem>
+                  <SelectItem value="feb23">Februari 2023</SelectItem>
+                  <SelectItem value="mar23">Maret 2023</SelectItem>
+                  <SelectItem value="apr23">April 2023</SelectItem>
+                  <SelectItem value="may23">Mei 2023</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                Unduh Laporan
+              </Button>
+            </div>
+          </div>
+          
+          <Card className="border-t-4 border-t-indigo-500">
             <CardHeader>
-              <CardTitle>Komposisi Aset</CardTitle>
+              <CardTitle>Arus Kas - Coming Soon</CardTitle>
               <CardDescription>
-                Distribusi aset perusahaan
+                Informasi tentang arus kas akan tersedia dalam waktu dekat
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={assetCategories}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {assetCategories.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value as number
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="rounded-full bg-indigo-100 p-4 mb-4">
+                  <Banknote className="h-8 w-8 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-medium mb-2">Laporan Arus Kas Sedang Dikembangkan</h3>
+                <p className="text-muted-foreground text-center max-w-md">
+                  Saat ini kami sedang mengembangkan fitur laporan arus kas yang lengkap. 
+                  Fitur ini akan tersedia dalam pembaruan berikutnya. Terima kasih atas kesabaran Anda.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </Layout>
+  );
+};
+
+export default Reports;
