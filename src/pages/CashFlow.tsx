@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,7 +46,15 @@ export default function CashFlow() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [accountFilter, setAccountFilter] = useState<string>("all");
+  const [cashTypeFilter, setCashTypeFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  
+  const cashTypes = [
+    { id: "all", name: "Semua Jenis" },
+    { id: "cash", name: "Tunai" },
+    { id: "transfer", name: "Transfer" },
+    { id: "check", name: "Cek/Giro" }
+  ];
   
   const filteredCashFlows = cashFlows.filter(flow => {
     const matchesSearch = flow.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -63,13 +70,17 @@ export default function CashFlow() {
     
     const matchesAccount = accountFilter === "all" || flow.accountCode === accountFilter;
     
-    return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && matchesAccount;
+    const flowCashType = flow.checkNumber ? "check" : (flow.payer || flow.receiver ? "transfer" : "cash");
+    const matchesCashType = cashTypeFilter === "all" || flowCashType === cashTypeFilter;
+    
+    return matchesSearch && matchesType && matchesDateFrom && matchesDateTo && matchesAccount && matchesCashType;
   });
 
   const activeFiltersCount = [
     dateFrom !== undefined, 
     dateTo !== undefined, 
-    accountFilter !== "all"
+    accountFilter !== "all",
+    cashTypeFilter !== "all"
   ].filter(Boolean).length;
 
   const handleCreateNew = () => {
@@ -110,6 +121,7 @@ export default function CashFlow() {
     setDateFrom(undefined);
     setDateTo(undefined);
     setAccountFilter("all");
+    setCashTypeFilter("all");
   };
 
   return (
@@ -172,7 +184,7 @@ export default function CashFlow() {
             
             {showFilters && (
               <Card className="p-4">
-                <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:flex-wrap">
                   <div className="grid w-full max-w-sm items-center gap-1.5">
                     <Label htmlFor="date-from">Tanggal Dari</Label>
                     <Popover>
@@ -249,6 +261,25 @@ export default function CashFlow() {
                     </Select>
                   </div>
                   
+                  <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <Label htmlFor="cash-type-filter">Jenis Kas</Label>
+                    <Select
+                      value={cashTypeFilter}
+                      onValueChange={setCashTypeFilter}
+                    >
+                      <SelectTrigger id="cash-type-filter">
+                        <SelectValue placeholder="Semua jenis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cashTypes.map(type => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button
                     variant="outline" 
                     size="icon" 
@@ -278,6 +309,12 @@ export default function CashFlow() {
                       <Badge variant="outline" className="flex items-center gap-1">
                         Rekening: {sampleAccounts.find(a => a.code === accountFilter)?.name || accountFilter}
                         <X className="h-3 w-3 cursor-pointer" onClick={() => setAccountFilter("all")} />
+                      </Badge>
+                    )}
+                    {cashTypeFilter !== "all" && (
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        Jenis Kas: {cashTypes.find(t => t.id === cashTypeFilter)?.name}
+                        <X className="h-3 w-3 cursor-pointer" onClick={() => setCashTypeFilter("all")} />
                       </Badge>
                     )}
                   </div>
