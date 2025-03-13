@@ -59,10 +59,16 @@ export default function Accounts() {
         description: `Rekening ${data.name} berhasil diperbarui.`,
       });
     } else {
-      // Add new account
+      // Add new account - ensure all required properties are provided
       const newAccount: Account = {
-        ...data,
-        balance: data.balance || 0,
+        code: data.code,
+        name: data.name,
+        level: data.level,
+        levelType: data.levelType,
+        parentCode: data.parentCode || "",
+        division: data.division || "01",
+        accountType: data.accountType,
+        balance: data.balance || 0
       };
       setAccounts([...accounts, newAccount]);
       toast({
