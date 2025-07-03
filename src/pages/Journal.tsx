@@ -11,7 +11,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Download, FileEdit, Trash2, BookOpen, HelpCircle } from "lucide-react";
+import { Search, Download, FileEdit, Trash2, BookOpen } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -22,12 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const Journal = () => {
@@ -38,7 +32,6 @@ const Journal = () => {
   const [editingJurnal, setEditingJurnal] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingJurnalId, setDeletingJurnalId] = useState<string>("");
-  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: jurnalData, isLoading, refetch } = useQuery({
@@ -160,69 +153,72 @@ const Journal = () => {
   return (
     <Layout title="Jurnal">
       <div className="space-y-6">
-        <div className="space-y-6">
-          {/* Form Section with Help Button */}
-          <Card>
-            <CardHeader className="relative">
-              <CardTitle>Form Jurnal Umum</CardTitle>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="absolute top-4 right-4 h-8 w-8 p-0"
-                onClick={() => setIsHelpModalOpen(true)}
-              >
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <JurnalForm onSuccess={handleFormSuccess} />
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Form Section */}
+          <div>
+            <JurnalForm onSuccess={handleFormSuccess} />
+          </div>
 
           {/* Summary Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ringkasan Jurnal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>Total Jurnal:</span>
-                  <span className="font-bold">{filteredData.length}</span>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ringkasan Jurnal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>Total Jurnal:</span>
+                    <span className="font-bold">{filteredData.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Entries:</span>
+                    <span className="font-bold">{totalEntries}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Debit:</span>
+                    <span className="font-bold text-blue-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalDebit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Kredit:</span>
+                    <span className="font-bold text-green-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalKredit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span>Balance:</span>
+                    <span className={`font-bold ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
+                      {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Total Entries:</span>
-                  <span className="font-bold">{totalEntries}</span>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Informasi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>• Form digunakan untuk mencatat transaksi akuntansi dengan metode double entry</p>
+                  <p>• Total debit harus sama dengan total kredit (balance)</p>
+                  <p>• ID jurnal di-generate otomatis dengan format JU+YYYYMMDD+NNN</p>
+                  <p>• Setiap entry harus memiliki deskripsi yang jelas untuk keperluan audit</p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Total Debit:</span>
-                  <span className="font-bold text-blue-600">
-                    {new Intl.NumberFormat('id-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                      minimumFractionDigits: 0,
-                    }).format(totalDebit)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Total Kredit:</span>
-                  <span className="font-bold text-green-600">
-                    {new Intl.NumberFormat('id-ID', {
-                      style: 'currency',
-                      currency: 'IDR',
-                      minimumFractionDigits: 0,
-                    }).format(totalKredit)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center border-t pt-2">
-                  <span>Balance:</span>
-                  <span className={`font-bold ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
-                    {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Data Table Section */}
@@ -364,21 +360,6 @@ const Journal = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Help Modal */}
-      <Dialog open={isHelpModalOpen} onOpenChange={setIsHelpModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Informasi Jurnal Umum</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-gray-600 space-y-2">
-            <p>• Form digunakan untuk mencatat transaksi akuntansi dengan metode double entry</p>
-            <p>• Total debit harus sama dengan total kredit (balance)</p>
-            <p>• ID jurnal di-generate otomatis dengan format JU+YYYYMMDD+NNN</p>
-            <p>• Setiap entry harus memiliki deskripsi yang jelas untuk keperluan audit</p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Form Dialog */}
       <JournalEntryForm
