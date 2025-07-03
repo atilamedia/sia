@@ -9,7 +9,718 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      aktivitas_aruskas: {
+        Row: {
+          created_at: string | null
+          jenis: Database["public"]["Enums"]["jenis_aktivitas"]
+          kode_rek: string
+          subjenis: Database["public"]["Enums"]["subjenis_aktivitas"]
+        }
+        Insert: {
+          created_at?: string | null
+          jenis?: Database["public"]["Enums"]["jenis_aktivitas"]
+          kode_rek: string
+          subjenis?: Database["public"]["Enums"]["subjenis_aktivitas"]
+        }
+        Update: {
+          created_at?: string | null
+          jenis?: Database["public"]["Enums"]["jenis_aktivitas"]
+          kode_rek?: string
+          subjenis?: Database["public"]["Enums"]["subjenis_aktivitas"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aktivitas_aruskas_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: true
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      anggaran: {
+        Row: {
+          at_create: string | null
+          kode_rek: string
+          last_update: string | null
+          tahun: number
+          tanda: Database["public"]["Enums"]["validasi_enum"]
+          total: number
+          usernya: string | null
+          validasi_realisasi:
+            | Database["public"]["Enums"]["validasi_enum"]
+            | null
+        }
+        Insert: {
+          at_create?: string | null
+          kode_rek: string
+          last_update?: string | null
+          tahun: number
+          tanda?: Database["public"]["Enums"]["validasi_enum"]
+          total?: number
+          usernya?: string | null
+          validasi_realisasi?:
+            | Database["public"]["Enums"]["validasi_enum"]
+            | null
+        }
+        Update: {
+          at_create?: string | null
+          kode_rek?: string
+          last_update?: string | null
+          tahun?: number
+          tanda?: Database["public"]["Enums"]["validasi_enum"]
+          total?: number
+          usernya?: string | null
+          validasi_realisasi?:
+            | Database["public"]["Enums"]["validasi_enum"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anggaran_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      divisi: {
+        Row: {
+          created_at: string | null
+          id_div: string
+          nama_div: string
+        }
+        Insert: {
+          created_at?: string | null
+          id_div: string
+          nama_div: string
+        }
+        Update: {
+          created_at?: string | null
+          id_div?: string
+          nama_div?: string
+        }
+        Relationships: []
+      }
+      hak_akses: {
+        Row: {
+          id_mod: number
+          no_: number | null
+          no_id: number
+        }
+        Insert: {
+          id_mod?: number
+          no_?: number | null
+          no_id?: number
+        }
+        Update: {
+          id_mod?: number
+          no_?: number | null
+          no_id?: number
+        }
+        Relationships: []
+      }
+      jurnal: {
+        Row: {
+          at_create: string | null
+          debit: number | null
+          deskripsi: string | null
+          kode: string
+          kode_rek: string
+          kredit: number | null
+          tanda_lo: Database["public"]["Enums"]["validasi_enum"] | null
+          tanggal: string | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode: string
+          kode_rek: string
+          kredit?: number | null
+          tanda_lo?: Database["public"]["Enums"]["validasi_enum"] | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode?: string
+          kode_rek?: string
+          kredit?: number | null
+          tanda_lo?: Database["public"]["Enums"]["validasi_enum"] | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurnal_kode_fkey"
+            columns: ["kode"]
+            isOneToOne: false
+            referencedRelation: "jurnalumum"
+            referencedColumns: ["id_ju"]
+          },
+          {
+            foreignKeyName: "jurnal_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      jurnal_jenis: {
+        Row: {
+          created_at: string | null
+          id_jj: string
+          is_default: Database["public"]["Enums"]["validasi_enum"] | null
+          nm_jj: string
+        }
+        Insert: {
+          created_at?: string | null
+          id_jj: string
+          is_default?: Database["public"]["Enums"]["validasi_enum"] | null
+          nm_jj: string
+        }
+        Update: {
+          created_at?: string | null
+          id_jj?: string
+          is_default?: Database["public"]["Enums"]["validasi_enum"] | null
+          nm_jj?: string
+        }
+        Relationships: []
+      }
+      jurnalumum: {
+        Row: {
+          at_create: string | null
+          id_div: string
+          id_jj: string
+          id_ju: string
+          is_mutasi: Database["public"]["Enums"]["validasi_enum"] | null
+          last_update: string | null
+          mark_cetak: number | null
+          tanggal: string | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          id_div?: string
+          id_jj?: string
+          id_ju: string
+          is_mutasi?: Database["public"]["Enums"]["validasi_enum"] | null
+          last_update?: string | null
+          mark_cetak?: number | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          id_div?: string
+          id_jj?: string
+          id_ju?: string
+          is_mutasi?: Database["public"]["Enums"]["validasi_enum"] | null
+          last_update?: string | null
+          mark_cetak?: number | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurnalumum_id_div_fkey"
+            columns: ["id_div"]
+            isOneToOne: false
+            referencedRelation: "divisi"
+            referencedColumns: ["id_div"]
+          },
+          {
+            foreignKeyName: "jurnalumum_id_jj_fkey"
+            columns: ["id_jj"]
+            isOneToOne: false
+            referencedRelation: "jurnal_jenis"
+            referencedColumns: ["id_jj"]
+          },
+        ]
+      }
+      jurnalumum_kasbank: {
+        Row: {
+          keterangan: string | null
+          kode: string
+          rek_dari: string
+          rek_tujuan: string
+        }
+        Insert: {
+          keterangan?: string | null
+          kode: string
+          rek_dari: string
+          rek_tujuan: string
+        }
+        Update: {
+          keterangan?: string | null
+          kode?: string
+          rek_dari?: string
+          rek_tujuan?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurnalumum_kasbank_kode_fkey"
+            columns: ["kode"]
+            isOneToOne: true
+            referencedRelation: "jurnalumum"
+            referencedColumns: ["id_ju"]
+          },
+          {
+            foreignKeyName: "jurnalumum_kasbank_rek_dari_fkey"
+            columns: ["rek_dari"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+          {
+            foreignKeyName: "jurnalumum_kasbank_rek_tujuan_fkey"
+            columns: ["rek_tujuan"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      kaskeluar: {
+        Row: {
+          at_create: string | null
+          bagian_seksi: string | null
+          id_div: string
+          id_kk: string
+          keterangan: string | null
+          kode_rek: string | null
+          last_update: string | null
+          mark_cetak: number | null
+          no_cek: string | null
+          penerima: string | null
+          tanggal: string | null
+          total: number | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          bagian_seksi?: string | null
+          id_div?: string
+          id_kk: string
+          keterangan?: string | null
+          kode_rek?: string | null
+          last_update?: string | null
+          mark_cetak?: number | null
+          no_cek?: string | null
+          penerima?: string | null
+          tanggal?: string | null
+          total?: number | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          bagian_seksi?: string | null
+          id_div?: string
+          id_kk?: string
+          keterangan?: string | null
+          kode_rek?: string | null
+          last_update?: string | null
+          mark_cetak?: number | null
+          no_cek?: string | null
+          penerima?: string | null
+          tanggal?: string | null
+          total?: number | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kaskeluar_id_div_fkey"
+            columns: ["id_div"]
+            isOneToOne: false
+            referencedRelation: "divisi"
+            referencedColumns: ["id_div"]
+          },
+          {
+            foreignKeyName: "kaskeluar_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      kaskeluar_jurnal: {
+        Row: {
+          at_create: string | null
+          debit: number | null
+          deskripsi: string | null
+          kode: string
+          kode_rek: string
+          kredit: number | null
+          rek_lra: string | null
+          tanggal: string | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode: string
+          kode_rek: string
+          kredit?: number | null
+          rek_lra?: string | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode?: string
+          kode_rek?: string
+          kredit?: number | null
+          rek_lra?: string | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kaskeluar_jurnal_kode_fkey"
+            columns: ["kode"]
+            isOneToOne: false
+            referencedRelation: "kaskeluar"
+            referencedColumns: ["id_kk"]
+          },
+          {
+            foreignKeyName: "kaskeluar_jurnal_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      kasmasuk: {
+        Row: {
+          at_create: string | null
+          id_div: string | null
+          id_km: string
+          keterangan: string | null
+          kode_rek: string
+          last_update: string | null
+          mark_cetak: number | null
+          no_cek: string | null
+          pembayar: string | null
+          tanggal: string | null
+          total: number | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          id_div?: string | null
+          id_km: string
+          keterangan?: string | null
+          kode_rek: string
+          last_update?: string | null
+          mark_cetak?: number | null
+          no_cek?: string | null
+          pembayar?: string | null
+          tanggal?: string | null
+          total?: number | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          id_div?: string | null
+          id_km?: string
+          keterangan?: string | null
+          kode_rek?: string
+          last_update?: string | null
+          mark_cetak?: number | null
+          no_cek?: string | null
+          pembayar?: string | null
+          tanggal?: string | null
+          total?: number | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kasmasuk_id_div_fkey"
+            columns: ["id_div"]
+            isOneToOne: false
+            referencedRelation: "divisi"
+            referencedColumns: ["id_div"]
+          },
+          {
+            foreignKeyName: "kasmasuk_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      kasmasuk_jurnal: {
+        Row: {
+          at_create: string | null
+          debit: number | null
+          deskripsi: string | null
+          kode: string
+          kode_rek: string
+          kredit: number | null
+          rek_lra: string | null
+          tanggal: string | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode: string
+          kode_rek: string
+          kredit?: number | null
+          rek_lra?: string | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode?: string
+          kode_rek?: string
+          kredit?: number | null
+          rek_lra?: string | null
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kasmasuk_jurnal_kode_fkey"
+            columns: ["kode"]
+            isOneToOne: false
+            referencedRelation: "kasmasuk"
+            referencedColumns: ["id_km"]
+          },
+          {
+            foreignKeyName: "kasmasuk_jurnal_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      lra: {
+        Row: {
+          at_create: string | null
+          debit: number | null
+          deskripsi: string | null
+          kode: string
+          kode_rek: string
+          kredit: number | null
+          rek_kas: string
+          tanggal: string | null
+          usernya: string | null
+        }
+        Insert: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode: string
+          kode_rek: string
+          kredit?: number | null
+          rek_kas?: string
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Update: {
+          at_create?: string | null
+          debit?: number | null
+          deskripsi?: string | null
+          kode?: string
+          kode_rek?: string
+          kredit?: number | null
+          rek_kas?: string
+          tanggal?: string | null
+          usernya?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lra_kode_rek_fkey"
+            columns: ["kode_rek"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      m_rekening: {
+        Row: {
+          created_at: string | null
+          id_div: string
+          jenis_rek: Database["public"]["Enums"]["jenis_rekening"] | null
+          k_level: Database["public"]["Enums"]["level_rekening"] | null
+          kode_rek: string
+          level: number | null
+          nama_rek: string | null
+          rek_induk: string | null
+          saldo: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id_div?: string
+          jenis_rek?: Database["public"]["Enums"]["jenis_rekening"] | null
+          k_level?: Database["public"]["Enums"]["level_rekening"] | null
+          kode_rek: string
+          level?: number | null
+          nama_rek?: string | null
+          rek_induk?: string | null
+          saldo?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id_div?: string
+          jenis_rek?: Database["public"]["Enums"]["jenis_rekening"] | null
+          k_level?: Database["public"]["Enums"]["level_rekening"] | null
+          kode_rek?: string
+          level?: number | null
+          nama_rek?: string | null
+          rek_induk?: string | null
+          saldo?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "m_rekening_id_div_fkey"
+            columns: ["id_div"]
+            isOneToOne: false
+            referencedRelation: "divisi"
+            referencedColumns: ["id_div"]
+          },
+          {
+            foreignKeyName: "m_rekening_rek_induk_fkey"
+            columns: ["rek_induk"]
+            isOneToOne: false
+            referencedRelation: "m_rekening"
+            referencedColumns: ["kode_rek"]
+          },
+        ]
+      }
+      modul_jenis: {
+        Row: {
+          dok_sumber: Database["public"]["Enums"]["validasi_enum"] | null
+          id_mod: number
+          nm_mod: string | null
+          tb_join: string | null
+          tb_jurnal: string | null
+          tb_where: string | null
+        }
+        Insert: {
+          dok_sumber?: Database["public"]["Enums"]["validasi_enum"] | null
+          id_mod: number
+          nm_mod?: string | null
+          tb_join?: string | null
+          tb_jurnal?: string | null
+          tb_where?: string | null
+        }
+        Update: {
+          dok_sumber?: Database["public"]["Enums"]["validasi_enum"] | null
+          id_mod?: number
+          nm_mod?: string | null
+          tb_join?: string | null
+          tb_jurnal?: string | null
+          tb_where?: string | null
+        }
+        Relationships: []
+      }
+      modul_lain: {
+        Row: {
+          id_mod: number
+          nm_mod: string | null
+          no_: number | null
+          urutnya: number | null
+        }
+        Insert: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Update: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Relationships: []
+      }
+      modul_laporan: {
+        Row: {
+          id_mod: number
+          nm_mod: string | null
+          no_: number | null
+          urutnya: number | null
+        }
+        Insert: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Update: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Relationships: []
+      }
+      modul_master: {
+        Row: {
+          id_mod: number
+          nm_mod: string | null
+          no_: number | null
+          urutnya: number | null
+        }
+        Insert: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Update: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Relationships: []
+      }
+      modul_pembelian: {
+        Row: {
+          id_mod: number
+          nm_mod: string | null
+          no_: number | null
+          urutnya: number | null
+        }
+        Insert: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Update: {
+          id_mod?: number
+          nm_mod?: string | null
+          no_?: number | null
+          urutnya?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +729,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      jenis_aktivitas: "OPERASI" | "INVESTASI" | "PENDANAAN" | "KAS"
+      jenis_rekening: "NERACA" | "LRA" | "LO"
+      level_rekening:
+        | "Induk"
+        | "Detail Kas"
+        | "Detail Bk"
+        | "Detail"
+        | "Sendiri"
+      subjenis_aktivitas: "PENYESUAIAN" | "PERUBAHAN" | "LAIN"
+      validasi_enum: "Y" | "N"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +853,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      jenis_aktivitas: ["OPERASI", "INVESTASI", "PENDANAAN", "KAS"],
+      jenis_rekening: ["NERACA", "LRA", "LO"],
+      level_rekening: ["Induk", "Detail Kas", "Detail Bk", "Detail", "Sendiri"],
+      subjenis_aktivitas: ["PENYESUAIAN", "PERUBAHAN", "LAIN"],
+      validasi_enum: ["Y", "N"],
+    },
   },
 } as const
