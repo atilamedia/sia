@@ -1,3 +1,4 @@
+
 import { Layout } from "@/components/layout/Layout";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
@@ -73,106 +74,124 @@ const Index = () => {
 
   return (
     <Layout title="Dashboard">
-      <div className="space-y-6 md:space-y-8 animate-fade-in">
-        {/* Info Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          <Card>
+      <div className="space-y-4 md:space-y-6 lg:space-y-8 animate-fade-in">
+        {/* Info Cards - Mobile optimized grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+          <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Total Kas</CardTitle>
-              <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Kas</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold">
+              <div className="text-xl md:text-2xl font-bold">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
+                  notation: 'compact',
+                  compactDisplay: 'short'
                 }).format(totalKas)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Saldo kas terkini
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Kas Masuk</CardTitle>
-              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Kas Masuk</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold text-green-600">
+              <div className="text-xl md:text-2xl font-bold text-green-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
+                  notation: 'compact',
+                  compactDisplay: 'short'
                 }).format(totalKasMasuk)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Total kas masuk
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Kas Keluar</CardTitle>
-              <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Kas Keluar</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold text-red-600">
+              <div className="text-xl md:text-2xl font-bold text-red-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
+                  notation: 'compact',
+                  compactDisplay: 'short'
                 }).format(totalKasKeluar)}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Total kas keluar
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs md:text-sm font-medium">Jurnal Entries</CardTitle>
-              <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Jurnal Entries</CardTitle>
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold">{totalJurnalEntries}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-xl md:text-2xl font-bold">{totalJurnalEntries}</div>
+              <p className="text-xs text-muted-foreground mt-1">
                 Total entries
               </p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-          <Card className="p-4 md:p-6 overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-              <h3 className="text-lg font-medium">Trend Arus Kas</h3>
-              <div className="text-xs flex items-center space-x-3">
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-primary rounded-full mr-1"></span>
+        {/* Charts - Mobile optimized layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <Card className="p-3 md:p-4 lg:p-6 overflow-hidden shadow-sm">
+            <div className="flex flex-col gap-2 mb-4">
+              <h3 className="text-base md:text-lg font-medium">Trend Arus Kas</h3>
+              <div className="flex flex-wrap gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-primary rounded-full"></span>
                   <span>Kas Masuk</span>
                 </div>
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-destructive rounded-full mr-1"></span>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-destructive rounded-full"></span>
                   <span>Kas Keluar</span>
                 </div>
               </div>
             </div>
-            <div className="h-[250px] md:h-[300px]">
+            <div className="h-[200px] sm:h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={cashFlowData}>
+                <LineChart data={cashFlowData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#888888" 
+                    fontSize={10}
+                    tickLine={false} 
+                    axisLine={false}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis 
                     stroke="#888888" 
-                    fontSize={12} 
+                    fontSize={10}
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(value) => `${(value/1000000).toFixed(1)}jt`}
+                    tickFormatter={(value) => `${(value/1000000).toFixed(1)}M`}
+                    width={40}
                   />
                   <Tooltip 
                     formatter={(value: number) => new Intl.NumberFormat('id-ID', {
@@ -181,6 +200,8 @@ const Index = () => {
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0
                     }).format(value)}
+                    labelStyle={{ fontSize: '12px' }}
+                    contentStyle={{ fontSize: '12px' }}
                   />
                   <Line
                     type="monotone"
@@ -188,8 +209,8 @@ const Index = () => {
                     name="Kas Masuk"
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 4 }}
                   />
                   <Line
                     type="monotone"
@@ -197,29 +218,40 @@ const Index = () => {
                     name="Kas Keluar"
                     stroke="hsl(var(--destructive))"
                     strokeWidth={2}
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </Card>
           
-          <Card className="p-4 md:p-6 overflow-hidden">
+          <Card className="p-3 md:p-4 lg:p-6 overflow-hidden shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">Perbandingan Kas Masuk & Keluar</h3>
+              <h3 className="text-base md:text-lg font-medium">Perbandingan Kas</h3>
             </div>
-            <div className="h-[250px] md:h-[300px]">
+            <div className="h-[200px] sm:h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cashFlowData}>
+                <BarChart data={cashFlowData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#888888" 
+                    fontSize={10}
+                    tickLine={false} 
+                    axisLine={false}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
                   <YAxis 
                     stroke="#888888" 
-                    fontSize={12} 
+                    fontSize={10}
                     tickLine={false} 
                     axisLine={false} 
-                    tickFormatter={(value) => `${(value/1000000).toFixed(1)}jt`}
+                    tickFormatter={(value) => `${(value/1000000).toFixed(1)}M`}
+                    width={40}
                   />
                   <Tooltip 
                     formatter={(value: number) => new Intl.NumberFormat('id-ID', {
@@ -228,18 +260,20 @@ const Index = () => {
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0
                     }).format(value)}
+                    labelStyle={{ fontSize: '12px' }}
+                    contentStyle={{ fontSize: '12px' }}
                   />
                   <Bar 
                     dataKey="masuk" 
                     name="Kas Masuk" 
                     fill="#10b981" 
-                    radius={[4, 4, 0, 0]} 
+                    radius={[2, 2, 0, 0]} 
                   />
                   <Bar 
                     dataKey="keluar" 
                     name="Kas Keluar" 
                     fill="#ef4444" 
-                    radius={[4, 4, 0, 0]}
+                    radius={[2, 2, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

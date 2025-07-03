@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
 import { formatDate } from "@/lib/utils";
@@ -90,6 +89,8 @@ export function RecentTransactions() {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
+      notation: window.innerWidth < 768 ? 'compact' : 'standard',
+      compactDisplay: 'short'
     }).format(amount);
   };
 
@@ -103,13 +104,14 @@ export function RecentTransactions() {
   };
 
   const truncateText = (text: string, maxLength: number) => {
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+    const length = window.innerWidth < 768 ? 25 : maxLength;
+    return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Transaksi Terbaru</h3>
+        <h3 className="text-base md:text-lg font-medium">Transaksi Terbaru</h3>
         <a
           href="/cash-flow"
           className="text-sm text-primary hover:underline focus:outline-none"
@@ -119,7 +121,57 @@ export function RecentTransactions() {
       </div>
       
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="block md:hidden">
+          <div className="divide-y">
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((transaction) => (
+                <div 
+                  key={transaction.id}
+                  className="p-4 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {transaction.category === "cash_in" && (
+                        <ArrowUpRight className="w-4 h-4 text-green-600" />
+                      )}
+                      {transaction.category === "cash_out" && (
+                        <ArrowDownRight className="w-4 h-4 text-red-600" />
+                      )}
+                      {transaction.category === "journal" && (
+                        <FileText className="w-4 h-4 text-blue-600" />
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {transaction.date ? formatDate(transaction.date) : '-'}
+                      </span>
+                    </div>
+                    <span className={`text-sm font-medium ${getTransactionTypeColor(transaction.type)}`}>
+                      {formatTransactionAmount(transaction.amount, transaction.type)}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">
+                      {transaction.accountCode}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {transaction.accountName}
+                    </div>
+                    <div className="text-sm">
+                      {truncateText(transaction.description, 40)}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                Tidak ada transaksi terbaru
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b bg-muted/50">
