@@ -1,11 +1,111 @@
 
-import { getRecentTransactions } from "@/lib/data";
-import { formatDate, formatTransactionAmount, getTransactionTypeColor, truncateText } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { siaApi } from "@/lib/sia-api";
+import { formatDate } from "@/lib/utils";
 import { ArrowUpRight, ArrowDownRight, FileText } from "lucide-react";
+import { useMemo } from "react";
 
 export function RecentTransactions() {
-  const transactions = getRecentTransactions();
-  
+  const { data: kasMasukData } = useQuery({
+    queryKey: ['kas-masuk-recent'],
+    queryFn: () => siaApi.getKasMasuk(),
+  });
+
+  const { data: kasKeluarData } = useQuery({
+    queryKey: ['kas-keluar-recent'],
+    queryFn: () => siaApi.getKasKeluar(),
+  });
+
+  const { data: jurnalData } = useQuery({
+    queryKey: ['jurnal-recent'],
+    queryFn: () => siaApi.getJurnal(),
+  });
+
+  // Combine and process all transactions
+  const recentTransactions = useMemo(() => {
+    const transactions = [];
+
+    // Add kas masuk transactions
+    if (kasMasukData?.data) {
+      kasMasukData.data.forEach(item => {
+        transactions.push({
+          id: item.id_km,
+          date: item.tanggal,
+          accountCode: item.kode_rek,
+          accountName: item.m_rekening?.nama_rek || 'Tidak diketahui',
+          description: item.keterangan || 'Kas Masuk',
+          amount: item.total || 0,
+          type: 'debit' as const,
+          category: 'cash_in' as const,
+          payer: item.pembayar,
+        });
+      });
+    }
+
+    // Add kas keluar transactions
+    if (kasKeluarData?.data) {
+      kasKeluarData.data.forEach(item => {
+        transactions.push({
+          id: item.id_kk,
+          date: item.tanggal,
+          accountCode: item.kode_rek,
+          accountName: item.m_rekening?.nama_rek || 'Tidak diketahui',
+          description: item.keterangan || 'Kas Keluar',
+          amount: item.total || 0,
+          type: 'credit' as const,
+          category: 'cash_out' as const,
+          receiver: item.penerima,
+        });
+      });
+    }
+
+    // Add jurnal transactions
+    if (jurnalData?.data) {
+      jurnalData.data.forEach(item => {
+        if (item.jurnal && item.jurnal.length > 0) {
+          item.jurnal.forEach(entry => {
+            transactions.push({
+              id: `${item.id_ju}-${entry.kode_rek}`,
+              date: item.tanggal,
+              accountCode: entry.kode_rek,
+              accountName: entry.m_rekening?.nama_rek || 'Tidak diketahui',
+              description: entry.deskripsi || 'Jurnal Entry',
+              amount: entry.debit || entry.kredit || 0,
+              type: entry.debit > 0 ? 'debit' as const : 'credit' as const,
+              category: 'journal' as const,
+            });
+          });
+        }
+      });
+    }
+
+    // Sort by date (newest first) and limit to 10
+    return transactions
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
+  }, [kasMasukData, kasKeluarData, jurnalData]);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatTransactionAmount = (amount: number, type: string) => {
+    const formattedAmount = formatCurrency(amount);
+    return type === 'debit' ? `+${formattedAmount}` : `-${formattedAmount}`;
+  };
+
+  const getTransactionTypeColor = (type: string) => {
+    return type === 'debit' ? 'text-green-600' : 'text-red-600';
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -41,44 +141,49 @@ export function RecentTransactions() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {transactions.map((transaction) => (
-                <tr 
-                  key={transaction.id}
-                  className="transition-colors hover:bg-muted/30"
-                >
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    {formatDate(transaction.date)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm">
-                    <span className="font-medium">{transaction.accountCode}</span>
-                    <span className="ml-1 text-muted-foreground">
-                      {transaction.accountName}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {truncateText(transaction.description, 40)}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
-                    <span className={getTransactionTypeColor(transaction.type)}>
-                      {formatTransactionAmount(
-                        transaction.amount,
-                        transaction.type
+              {recentTransactions.length > 0 ? (
+                recentTransactions.map((transaction) => (
+                  <tr 
+                    key={transaction.id}
+                    className="transition-colors hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      {transaction.date ? formatDate(transaction.date) : '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm">
+                      <span className="font-medium">{transaction.accountCode}</span>
+                      <span className="ml-1 text-muted-foreground">
+                        {transaction.accountName}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {truncateText(transaction.description, 40)}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
+                      <span className={getTransactionTypeColor(transaction.type)}>
+                        {formatTransactionAmount(transaction.amount, transaction.type)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
+                      {transaction.category === "cash_in" && (
+                        <ArrowUpRight className="w-4 h-4 text-green-600 inline" />
                       )}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
-                    {transaction.category === "cash_in" && (
-                      <ArrowUpRight className="w-4 h-4 text-green-600 inline" />
-                    )}
-                    {transaction.category === "cash_out" && (
-                      <ArrowDownRight className="w-4 h-4 text-red-600 inline" />
-                    )}
-                    {transaction.category === "journal" && (
-                      <FileText className="w-4 h-4 text-blue-600 inline" />
-                    )}
+                      {transaction.category === "cash_out" && (
+                        <ArrowDownRight className="w-4 h-4 text-red-600 inline" />
+                      )}
+                      {transaction.category === "journal" && (
+                        <FileText className="w-4 h-4 text-blue-600 inline" />
+                      )}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    Tidak ada transaksi terbaru
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

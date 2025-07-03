@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
 import { DollarSign, TrendingUp, TrendingDown, BookOpen } from "lucide-react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo } from "react";
 
 const Index = () => {
   // Fetch data untuk dashboard
@@ -37,15 +38,39 @@ const Index = () => {
   const totalKas = totalKasMasuk - totalKasKeluar;
   const totalJurnalEntries = jurnalData?.data?.length || 0;
 
-  // Chart data
-  const cashFlowData = [
-    { name: "Jan", masuk: totalKasMasuk * 0.15, keluar: totalKasKeluar * 0.12 },
-    { name: "Feb", masuk: totalKasMasuk * 0.18, keluar: totalKasKeluar * 0.15 },
-    { name: "Mar", masuk: totalKasMasuk * 0.16, keluar: totalKasKeluar * 0.18 },
-    { name: "Apr", masuk: totalKasMasuk * 0.14, keluar: totalKasKeluar * 0.16 },
-    { name: "Mei", masuk: totalKasMasuk * 0.20, keluar: totalKasKeluar * 0.19 },
-    { name: "Jun", masuk: totalKasMasuk * 0.17, keluar: totalKasKeluar * 0.20 },
-  ];
+  // Process real data for charts
+  const cashFlowData = useMemo(() => {
+    if (!kasMasukData?.data || !kasKeluarData?.data) return [];
+
+    // Group data by month
+    const monthlyData = {};
+    
+    // Process kas masuk data
+    kasMasukData.data.forEach(item => {
+      if (item.tanggal) {
+        const month = new Date(item.tanggal).toLocaleString('id-ID', { month: 'short' });
+        if (!monthlyData[month]) {
+          monthlyData[month] = { name: month, masuk: 0, keluar: 0 };
+        }
+        monthlyData[month].masuk += item.total || 0;
+      }
+    });
+
+    // Process kas keluar data
+    kasKeluarData.data.forEach(item => {
+      if (item.tanggal) {
+        const month = new Date(item.tanggal).toLocaleString('id-ID', { month: 'short' });
+        if (!monthlyData[month]) {
+          monthlyData[month] = { name: month, masuk: 0, keluar: 0 };
+        }
+        monthlyData[month].keluar += item.total || 0;
+      }
+    });
+
+    // Convert to array and sort by month
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return months.map(month => monthlyData[month] || { name: month, masuk: 0, keluar: 0 });
+  }, [kasMasukData, kasKeluarData]);
 
   return (
     <Layout title="Dashboard">
