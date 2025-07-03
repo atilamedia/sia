@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Home, 
@@ -29,20 +28,10 @@ const navigation = [
   { name: "Akun", href: "/accounts", icon: Users },
 ];
 
-interface SidebarProps {
-  onCollapsedChange?: (collapsed: boolean) => void;
-}
-
-export function Sidebar({ onCollapsedChange }: SidebarProps) {
+export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
-
-  const handleToggleCollapse = () => {
-    const newCollapsed = !collapsed;
-    setCollapsed(newCollapsed);
-    onCollapsedChange?.(newCollapsed);
-  };
 
   if (isMobile) {
     return (
@@ -129,7 +118,7 @@ export function Sidebar({ onCollapsedChange }: SidebarProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleToggleCollapse}
+          onClick={() => setCollapsed(!collapsed)}
           className={cn("flex-shrink-0", collapsed && "mx-auto")}
         >
           {collapsed ? (

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 const SIA_API_URL = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
@@ -14,13 +13,6 @@ export interface MasterRekening {
   jenis_rek: 'NERACA' | 'LRA' | 'LO';
   created_at?: string;
   updated_at?: string;
-}
-
-export interface JurnalJenis {
-  id_jj: string;
-  nm_jj: string;
-  is_default: 'Y' | 'N';
-  created_at?: string;
 }
 
 export interface KasMasuk {
@@ -124,11 +116,6 @@ export class SiaApiClient {
     return this.callApi(`master-rekening?kode_rek=${kodeRek}`, {
       method: 'DELETE',
     });
-  }
-
-  // Jurnal Jenis methods
-  async getJurnalJenis(): Promise<{ data: JurnalJenis[] }> {
-    return this.callApi('jurnal-jenis');
   }
 
   // Kas Masuk methods
