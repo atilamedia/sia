@@ -173,11 +173,11 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Kode Rekening</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead>Debit</TableHead>
-                  <TableHead>Kredit</TableHead>
-                  <TableHead>Aksi</TableHead>
+                  <TableHead className="w-[200px]">Kode Rekening</TableHead>
+                  <TableHead className="w-[300px]">Deskripsi</TableHead>
+                  <TableHead className="w-[120px] text-center">Debet</TableHead>
+                  <TableHead className="w-[120px] text-center">Kredit</TableHead>
+                  <TableHead className="w-[80px] text-center">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -205,6 +205,7 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                         value={entry.deskripsi}
                         onChange={(e) => updateEntry(index, 'deskripsi', e.target.value)}
                         rows={2}
+                        className="min-h-[60px]"
                       />
                     </TableCell>
                     <TableCell>
@@ -214,6 +215,7 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                         step="0.01"
                         value={entry.debit}
                         onChange={(e) => updateEntry(index, 'debit', parseFloat(e.target.value) || 0)}
+                        className="text-right"
                       />
                     </TableCell>
                     <TableCell>
@@ -223,9 +225,10 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                         step="0.01"
                         value={entry.kredit}
                         onChange={(e) => updateEntry(index, 'kredit', parseFloat(e.target.value) || 0)}
+                        className="text-right"
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Button
                         type="button"
                         variant="destructive"
@@ -244,7 +247,7 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
             {/* Total */}
             <div className="mt-4 p-4 bg-gray-50 rounded">
               <div className="flex justify-between items-center">
-                <span className="font-semibold">Total Debit: Rp {getTotalDebit().toLocaleString()}</span>
+                <span className="font-semibold">Total Debet: Rp {getTotalDebit().toLocaleString()}</span>
                 <span className="font-semibold">Total Kredit: Rp {getTotalKredit().toLocaleString()}</span>
               </div>
               <div className="mt-2 text-center">
