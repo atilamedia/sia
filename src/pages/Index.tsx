@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/layout/Layout";
 import { FinancialSummary } from "@/components/dashboard/FinancialSummary";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
@@ -233,13 +232,13 @@ const Index = () => {
                   <Bar 
                     dataKey="masuk" 
                     name="Kas Masuk" 
-                    fill="rgba(var(--primary), 0.8)" 
+                    fill="#10b981" 
                     radius={[4, 4, 0, 0]} 
                   />
                   <Bar 
                     dataKey="keluar" 
                     name="Kas Keluar" 
-                    fill="rgba(var(--destructive), 0.8)" 
+                    fill="#ef4444" 
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
