@@ -170,20 +170,13 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
               </Button>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Kode Rekening</TableHead>
-                  <TableHead className="w-[300px]">Deskripsi</TableHead>
-                  <TableHead className="w-[120px] text-center">Debet</TableHead>
-                  <TableHead className="w-[120px] text-center">Kredit</TableHead>
-                  <TableHead className="w-[80px] text-center">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
+            <div className="space-y-4">
+              {entries.map((entry, index) => (
+                <Card key={index} className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Kode Rekening */}
+                    <div>
+                      <Label>Kode Rekening</Label>
                       <Select 
                         value={entry.kode_rek} 
                         onValueChange={(value) => updateEntry(index, 'kode_rek', value)}
@@ -199,36 +192,10 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Textarea
-                        value={entry.deskripsi}
-                        onChange={(e) => updateEntry(index, 'deskripsi', e.target.value)}
-                        rows={2}
-                        className="min-h-[60px]"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={entry.debit}
-                        onChange={(e) => updateEntry(index, 'debit', parseFloat(e.target.value) || 0)}
-                        className="text-right"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={entry.kredit}
-                        onChange={(e) => updateEntry(index, 'kredit', parseFloat(e.target.value) || 0)}
-                        className="text-right"
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
+                    </div>
+
+                    {/* Remove Button */}
+                    <div className="flex justify-end items-start">
                       <Button
                         type="button"
                         variant="destructive"
@@ -236,13 +203,53 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                         onClick={() => removeEntry(index)}
                         disabled={entries.length === 1}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Hapus
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+
+                    {/* Deskripsi - Full width */}
+                    <div className="md:col-span-2">
+                      <Label>Keterangan</Label>
+                      <Textarea
+                        value={entry.deskripsi}
+                        onChange={(e) => updateEntry(index, 'deskripsi', e.target.value)}
+                        rows={3}
+                        placeholder="Masukkan keterangan transaksi..."
+                        required
+                      />
+                    </div>
+
+                    {/* Debit dan Kredit */}
+                    <div>
+                      <Label>Debet</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={entry.debit}
+                        onChange={(e) => updateEntry(index, 'debit', parseFloat(e.target.value) || 0)}
+                        className="text-right"
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>Kredit</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={entry.kredit}
+                        onChange={(e) => updateEntry(index, 'kredit', parseFloat(e.target.value) || 0)}
+                        className="text-right"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
 
             {/* Total */}
             <div className="mt-4 p-4 bg-gray-50 rounded">
