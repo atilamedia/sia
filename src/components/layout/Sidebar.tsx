@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Home, 
@@ -28,10 +29,27 @@ const navigation = [
   { name: "Akun", href: "/accounts", icon: Users },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onToggle?: (collapsed: boolean) => void;
+}
+
+export function Sidebar({ onToggle }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  const handleToggle = () => {
+    const newState = !collapsed;
+    setCollapsed(newState);
+    if (onToggle) {
+      onToggle(newState);
+    }
+    
+    // Dispatch custom event for backward compatibility
+    window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
+      detail: { collapsed: newState } 
+    }));
+  };
 
   if (isMobile) {
     return (
@@ -103,7 +121,7 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "fixed left-0 top-0 z-30 h-full bg-background border-r transition-all duration-300 hidden md:flex flex-col",
+        "fixed left-0 top-0 z-30 h-full bg-background border-r transition-all duration-300 ease-linear hidden md:flex flex-col",
         collapsed ? "w-[70px]" : "w-[250px]"
       )}
     >
@@ -118,7 +136,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={handleToggle}
           className={cn("flex-shrink-0", collapsed && "mx-auto")}
         >
           {collapsed ? (
