@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
 import { siaApi, type MasterRekening, type JurnalData, type JurnalEntry } from "@/lib/sia-api";
@@ -170,20 +169,26 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
               </Button>
             </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kode Rekening</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead>Debit</TableHead>
-                  <TableHead>Kredit</TableHead>
-                  <TableHead>Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((entry, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
+            <div className="space-y-4">
+              {entries.map((entry, index) => (
+                <Card key={index} className="border border-gray-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-sm font-medium">Entry {index + 1}</CardTitle>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeEntry(index)}
+                        disabled={entries.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor={`account-${index}`}>Kode Rekening</Label>
                       <Select 
                         value={entry.kode_rek} 
                         onValueChange={(value) => updateEntry(index, 'kode_rek', value)}
@@ -199,60 +204,65 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                           ))}
                         </SelectContent>
                       </Select>
-                    </TableCell>
-                    <TableCell>
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`description-${index}`}>Deskripsi</Label>
                       <Textarea
+                        id={`description-${index}`}
                         value={entry.deskripsi}
                         onChange={(e) => updateEntry(index, 'deskripsi', e.target.value)}
-                        rows={2}
+                        placeholder="Masukkan deskripsi transaksi..."
+                        rows={3}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={entry.debit}
-                        onChange={(e) => updateEntry(index, 'debit', parseFloat(e.target.value) || 0)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={entry.kredit}
-                        onChange={(e) => updateEntry(index, 'kredit', parseFloat(e.target.value) || 0)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => removeEntry(index)}
-                        disabled={entries.length === 1}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`debit-${index}`}>Debit</Label>
+                        <Input
+                          id={`debit-${index}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={entry.debit}
+                          onChange={(e) => updateEntry(index, 'debit', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`kredit-${index}`}>Kredit</Label>
+                        <Input
+                          id={`kredit-${index}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={entry.kredit}
+                          onChange={(e) => updateEntry(index, 'kredit', parseFloat(e.target.value) || 0)}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
             {/* Total */}
-            <div className="mt-4 p-4 bg-gray-50 rounded">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold">Total Debit: Rp {getTotalDebit().toLocaleString()}</span>
-                <span className="font-semibold">Total Kredit: Rp {getTotalKredit().toLocaleString()}</span>
-              </div>
-              <div className="mt-2 text-center">
-                <span className={`font-semibold ${getTotalDebit() === getTotalKredit() ? 'text-green-600' : 'text-red-600'}`}>
-                  {getTotalDebit() === getTotalKredit() ? 'BALANCE' : 'TIDAK BALANCE'}
-                </span>
-              </div>
-            </div>
+            <Card className="mt-4 bg-gray-50">
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Total Debit: Rp {getTotalDebit().toLocaleString()}</span>
+                  <span className="font-semibold">Total Kredit: Rp {getTotalKredit().toLocaleString()}</span>
+                </div>
+                <div className="mt-2 text-center">
+                  <span className={`font-semibold ${getTotalDebit() === getTotalKredit() ? 'text-green-600' : 'text-red-600'}`}>
+                    {getTotalDebit() === getTotalKredit() ? 'BALANCE' : 'TIDAK BALANCE'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <Button type="submit" disabled={loading || getTotalDebit() !== getTotalKredit()} className="w-full">
