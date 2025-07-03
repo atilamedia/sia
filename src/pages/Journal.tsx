@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -368,7 +369,7 @@ const Journal = () => {
           setEditingJurnal(null);
         }}
         onSave={handleEditSave}
-        journalTypes={[{ id: 'JU', name: 'Jurnal Umum' }]}
+        journalTypes={[{ id: 'JU', name: 'Jurnal Umum', isDefault: true }]}
         initialEntries={editingJurnal?.jurnal?.map((entry: any) => ({
           code: editingJurnal.id_ju,
           date: editingJurnal.tanggal,
