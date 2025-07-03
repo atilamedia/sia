@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { Download, Filter } from "lucide-react";
+import { Download, Filter, FileSpreadsheet, FileText } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import * as XLSX from 'xlsx';
 
 const CashFlow = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
@@ -42,29 +43,165 @@ const CashFlow = () => {
     { name: "Net Cash Flow", value: netCashFlow, color: netCashFlow >= 0 ? "#10B981" : "#EF4444" }
   ];
 
-  const exportData = () => {
-    const csvContent = [
-      ['Tanggal', 'Jenis', 'Keterangan', 'Jumlah'],
-      ...(kasMasukData?.data?.map(item => [
-        item.tanggal,
-        'Kas Masuk',
-        item.keterangan,
-        item.total
-      ]) || []),
-      ...(kasKeluarData?.data?.map(item => [
-        item.tanggal,
-        'Kas Keluar',
-        item.keterangan,
-        item.total
-      ]) || [])
-    ].map(row => row.join(',')).join('\n');
+  const exportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Ringkasan Arus Kas'],
+      [''],
+      ['Total Kas Masuk', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalKasMasuk)],
+      ['Total Kas Keluar', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalKasKeluar)],
+      ['Net Cash Flow', new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(netCashFlow)],
+      [''],
+      ['Periode:', date?.from && date?.to ? `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}` : 'Semua']
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cash-flow-${Date.now()}.csv`;
-    a.click();
+    // Kas Masuk sheet
+    if (kasMasukData?.data?.length > 0) {
+      const kasMasukSheet = XLSX.utils.json_to_sheet(
+        kasMasukData.data.map(item => ({
+          'Tanggal': item.tanggal,
+          'Keterangan': item.keterangan,
+          'Pembayar': item.pembayar,
+          'Jumlah': item.total
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, kasMasukSheet, 'Kas Masuk');
+    }
+
+    // Kas Keluar sheet
+    if (kasKeluarData?.data?.length > 0) {
+      const kasKeluarSheet = XLSX.utils.json_to_sheet(
+        kasKeluarData.data.map(item => ({
+          'Tanggal': item.tanggal,
+          'Keterangan': item.keterangan,
+          'Penerima': item.penerima,
+          'Jumlah': item.total
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, kasKeluarSheet, 'Kas Keluar');
+    }
+
+    const fileName = `laporan-arus-kas-${Date.now()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const exportToPDF = () => {
+    // Create a new window with printable content
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dateRange = date?.from && date?.to 
+      ? `${format(date.from, 'dd MMMM yyyy')} - ${format(date.to, 'dd MMMM yyyy')}`
+      : 'Semua Periode';
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Arus Kas</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { margin-bottom: 30px; }
+          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f5f5f5; }
+          .positive { color: #10B981; }
+          .negative { color: #EF4444; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Laporan Arus Kas</h1>
+          <p>Periode: ${dateRange}</p>
+        </div>
+        
+        <div class="summary">
+          <h2>Ringkasan</h2>
+          <div class="summary-item">
+            <span>Total Kas Masuk:</span>
+            <span class="positive">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalKasMasuk)}</span>
+          </div>
+          <div class="summary-item">
+            <span>Total Kas Keluar:</span>
+            <span class="negative">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalKasKeluar)}</span>
+          </div>
+          <div class="summary-item">
+            <span><strong>Net Cash Flow:</strong></span>
+            <span class="${netCashFlow >= 0 ? 'positive' : 'negative'}"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(netCashFlow)}</strong></span>
+          </div>
+        </div>
+
+        ${kasMasukData?.data?.length > 0 ? `
+        <div>
+          <h2>Detail Kas Masuk</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Pembayar</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kasMasukData.data.map(item => `
+                <tr>
+                  <td>${item.tanggal}</td>
+                  <td>${item.keterangan}</td>
+                  <td>${item.pembayar}</td>
+                  <td class="positive">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+
+        ${kasKeluarData?.data?.length > 0 ? `
+        <div>
+          <h2>Detail Kas Keluar</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Penerima</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kasKeluarData.data.map(item => `
+                <tr>
+                  <td>${item.tanggal}</td>
+                  <td>${item.keterangan}</td>
+                  <td>${item.penerima}</td>
+                  <td class="negative">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   return (
@@ -78,9 +215,13 @@ const CashFlow = () => {
               dateRange={date} 
               onDateRangeChange={setDate}
             />
-            <Button onClick={exportData} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
+            <Button onClick={exportToExcel} variant="outline">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+            <Button onClick={exportToPDF} variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
             </Button>
           </div>
         </div>
