@@ -1,321 +1,274 @@
 
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { JurnalForm } from "@/components/sia/JurnalForm";
+import { useQuery } from "@tanstack/react-query";
+import { siaApi } from "@/lib/sia-api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookText, Download, Filter, Plus, Search, Calendar, X } from "lucide-react";
-import { JournalEntry, JournalType } from "@/lib/types";
-import { sampleJournalEntries, sampleJournalTypes } from "@/lib/data";
-import { JournalEntriesCard } from "@/components/journal/JournalEntriesCard";
-import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
-import { JournalTypesTable } from "@/components/journal/JournalTypesTable";
-import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Search, Download, FileEdit, Trash2, BookOpen } from "lucide-react";
 
-export default function Journal() {
-  const [journals, setJournals] = useState<JournalEntry[]>(sampleJournalEntries);
+const Journal = () => {
+  const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedJournalType, setSelectedJournalType] = useState<string>("all");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingEntries, setEditingEntries] = useState<JournalEntry[] | null>(null);
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [showFilters, setShowFilters] = useState(false);
-  
-  // Group journal entries by code
-  const journalGroups = journals.reduce((groups, entry) => {
-    if (!groups[entry.code]) {
-      groups[entry.code] = [];
-    }
-    groups[entry.code].push(entry);
-    return groups;
-  }, {} as Record<string, JournalEntry[]>);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const filteredJournalGroups = Object.entries(journalGroups)
-    .filter(([code, entries]) => {
-      const matchesSearch = code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         entries.some(entry => 
-                         entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.accountCode.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      // Date filtering
-      const entryDate = new Date(entries[0].date);
-      const matchesStartDate = !startDate || entryDate >= startDate;
-      const matchesEndDate = !endDate || entryDate <= endDate;
-      
-      // If "all" is selected or no filter, show all journals
-      if (selectedJournalType === "all") {
-        return matchesSearch && matchesStartDate && matchesEndDate;
-      }
-      
-      // Filter by journal type (in a real app, you'd have a type field)
-      // For now, we'll just simulate this with the first digit of the code
-      const journalTypePrefix = selectedJournalType.charAt(0);
-      return matchesSearch && code.charAt(0) === journalTypePrefix && matchesStartDate && matchesEndDate;
-    })
-    .reduce((obj, [code, entries]) => {
-      obj[code] = entries;
-      return obj;
-    }, {} as Record<string, JournalEntry[]>);
+  const { data: jurnalData, isLoading, refetch } = useQuery({
+    queryKey: ['jurnal', date?.from, date?.to, refreshTrigger],
+    queryFn: () => siaApi.getJurnal(
+      date?.from ? format(date.from, 'yyyy-MM-dd') : undefined,
+      date?.to ? format(date.to, 'yyyy-MM-dd') : undefined
+    ),
+  });
 
-  const activeFiltersCount = [
-    startDate !== undefined,
-    endDate !== undefined,
-    selectedJournalType !== "all"
-  ].filter(Boolean).length;
-
-  const handleAddJournal = () => {
-    setEditingEntries(null);
-    setIsFormOpen(true);
+  const handleFormSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+    refetch();
   };
 
-  const handleEditJournal = (entries: JournalEntry[]) => {
-    setEditingEntries(entries);
-    setIsFormOpen(true);
-  };
+  const filteredData = jurnalData?.data?.filter(item => 
+    item.id_ju?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.jurnal_jenis?.nm_jj?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
-  const handleDeleteJournal = (code: string) => {
-    setJournals(journals.filter(journal => journal.code !== code));
-    toast.success(`Jurnal ${code} berhasil dihapus`);
-  };
+  const totalEntries = filteredData.reduce((sum, item) => sum + (item.jurnal?.length || 0), 0);
+  const totalDebit = filteredData.reduce((sum, item) => 
+    sum + (item.jurnal?.reduce((debitSum, entry) => debitSum + (entry.debit || 0), 0) || 0), 0
+  );
+  const totalKredit = filteredData.reduce((sum, item) => 
+    sum + (item.jurnal?.reduce((kreditSum, entry) => kreditSum + (entry.kredit || 0), 0) || 0), 0
+  );
 
-  const handleSaveJournal = (entries: JournalEntry[]) => {
-    if (editingEntries) {
-      // Update existing journal entries
-      const code = editingEntries[0].code;
-      const updatedJournals = journals.filter(journal => journal.code !== code);
-      setJournals([...updatedJournals, ...entries]);
-      toast.success(`Jurnal ${code} berhasil diperbarui`);
-    } else {
-      // Add new journal entries
-      setJournals([...journals, ...entries]);
-      toast.success(`Jurnal baru berhasil ditambahkan`);
-    }
-    setIsFormOpen(false);
-    setEditingEntries(null);
-  };
+  const exportData = () => {
+    const csvContent = [
+      ['ID Jurnal', 'Tanggal', 'Jenis', 'Rekening', 'Deskripsi', 'Debit', 'Kredit'],
+      ...filteredData.flatMap(item => 
+        item.jurnal?.map(entry => [
+          item.id_ju,
+          item.tanggal,
+          item.jurnal_jenis?.nm_jj,
+          entry.kode_rek,
+          entry.deskripsi,
+          entry.debit,
+          entry.kredit
+        ]) || []
+      )
+    ].map(row => row.join(',')).join('\n');
 
-  const clearFilters = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setSelectedJournalType("all");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `jurnal-${Date.now()}.csv`;
+    a.click();
   };
 
   return (
-    <Layout>
-      <div className="container px-4 py-6 lg:px-8">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <Layout title="Jurnal">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Form Section */}
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Jurnal</h2>
-            <p className="text-muted-foreground">
-              Kelola entri jurnal akuntansi
-            </p>
+            <JurnalForm onSuccess={handleFormSuccess} />
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button onClick={handleAddJournal}>
-              <Plus className="mr-2 h-4 w-4" />
-              Jurnal Baru
-            </Button>
+
+          {/* Summary Section */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ringkasan Jurnal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>Total Jurnal:</span>
+                    <span className="font-bold">{filteredData.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Entries:</span>
+                    <span className="font-bold">{totalEntries}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Debit:</span>
+                    <span className="font-bold text-blue-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalDebit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Kredit:</span>
+                    <span className="font-bold text-green-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalKredit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span>Balance:</span>
+                    <span className={`font-bold ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
+                      {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Informasi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>• Form digunakan untuk mencatat transaksi akuntansi dengan metode double entry</p>
+                  <p>• Total debit harus sama dengan total kredit (balance)</p>
+                  <p>• ID jurnal di-generate otomatis dengan format JU+YYYYMMDD+NNN</p>
+                  <p>• Setiap entry harus memiliki deskripsi yang jelas untuk keperluan audit</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-        
-        <Tabs defaultValue="journals" className="mt-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-            <TabsList>
-              <TabsTrigger value="journals">Jurnal</TabsTrigger>
-              <TabsTrigger value="journal-types">Jenis Jurnal</TabsTrigger>
-            </TabsList>
-            
-            <div className="flex w-full sm:w-auto gap-2">
-              <div className="relative w-full sm:w-[300px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Cari jurnal..."
-                  className="pl-8 w-full"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+
+        {/* Data Table Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle>Daftar Jurnal Umum</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Cari jurnal..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <DateRangePicker 
+                  dateRange={date} 
+                  onDateRangeChange={setDate}
                 />
-              </div>
-              <Select value={selectedJournalType} onValueChange={setSelectedJournalType}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Jenis Jurnal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua</SelectItem>
-                  {sampleJournalTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => setShowFilters(!showFilters)}
-                className={activeFiltersCount > 0 ? "relative" : ""}
-              >
-                <Filter className="h-4 w-4" />
-                {activeFiltersCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                    {activeFiltersCount}
-                  </span>
-                )}
-              </Button>
-            </div>
-          </div>
-          
-          {showFilters && (
-            <Card className="p-4 mb-4">
-              <div className="flex flex-col md:flex-row md:items-end gap-4">
-                <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="date-from">Tanggal Dari</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="date-from"
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !startDate && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {startDate ? format(startDate, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Label htmlFor="date-to">Tanggal Sampai</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        id="date-to"
-                        variant={"outline"}
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !endDate && "text-muted-foreground"
-                        )}
-                      >
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {endDate ? format(endDate, "dd/MM/yyyy") : <span>Pilih tanggal</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
-                        mode="single"
-                        selected={endDate}
-                        onSelect={setEndDate}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <Button
-                  variant="outline" 
-                  size="icon" 
-                  onClick={clearFilters}
-                  className="h-10 mt-auto"
-                  title="Reset filter"
-                >
-                  <X className="h-4 w-4" />
+                <Button onClick={exportData} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Export
                 </Button>
               </div>
-              
-              {activeFiltersCount > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {startDate && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      Dari: {format(startDate, "dd/MM/yyyy")}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setStartDate(undefined)} />
-                    </Badge>
-                  )}
-                  {endDate && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      Sampai: {format(endDate, "dd/MM/yyyy")}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setEndDate(undefined)} />
-                    </Badge>
-                  )}
-                  {selectedJournalType !== "all" && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      Jenis: {sampleJournalTypes.find(t => t.id === selectedJournalType)?.name || selectedJournalType}
-                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedJournalType("all")} />
-                    </Badge>
-                  )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Loading...
+                </div>
+              ) : filteredData.length > 0 ? (
+                filteredData.map((jurnal) => (
+                  <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <BookOpen className="h-4 w-4 text-blue-500" />
+                          <span className="font-medium">{jurnal.id_ju}</span>
+                          <span className="text-sm text-muted-foreground">
+                            - {jurnal.tanggal}
+                          </span>
+                          <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {jurnal.jurnal_jenis?.nm_jj}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                            <FileEdit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Rekening</th>
+                              <th className="text-left p-2 font-medium">Deskripsi</th>
+                              <th className="text-right p-2 font-medium">Debit</th>
+                              <th className="text-right p-2 font-medium">Kredit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {jurnal.jurnal?.map((entry, index) => (
+                              <tr key={index} className="border-b last:border-b-0">
+                                <td className="p-2">
+                                  <div className="font-medium">{entry.kode_rek}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {entry.m_rekening?.nama_rek}
+                                  </div>
+                                </td>
+                                <td className="p-2">{entry.deskripsi}</td>
+                                <td className="p-2 text-right font-medium text-blue-600">
+                                  {entry.debit > 0 ? new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    minimumFractionDigits: 0,
+                                  }).format(entry.debit) : '-'}
+                                </td>
+                                <td className="p-2 text-right font-medium text-green-600">
+                                  {entry.kredit > 0 ? new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    minimumFractionDigits: 0,
+                                  }).format(entry.kredit) : '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
+                        <span>Total:</span>
+                        <div className="flex space-x-4">
+                          <span className="text-blue-600">
+                            Debit: {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0,
+                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                          </span>
+                          <span className="text-green-600">
+                            Kredit: {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0,
+                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  Tidak ada data jurnal yang ditemukan
                 </div>
               )}
-            </Card>
-          )}
-          
-          <TabsContent value="journals" className="mt-0 space-y-4">
-            {Object.keys(filteredJournalGroups).length > 0 ? (
-              Object.entries(filteredJournalGroups).map(([code, entries]) => (
-                <JournalEntriesCard 
-                  key={code} 
-                  code={code} 
-                  entries={entries} 
-                  onEdit={handleEditJournal}
-                  onDelete={handleDeleteJournal}
-                />
-              ))
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                  <BookText className="h-10 w-10 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">Tidak ada entri jurnal</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Belum ada entri jurnal yang sesuai dengan filter pencarian.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="journal-types" className="mt-0">
-            <JournalTypesTable journalTypes={sampleJournalTypes} />
-          </TabsContent>
-        </Tabs>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      
-      {isFormOpen && (
-        <JournalEntryForm
-          isOpen={isFormOpen}
-          onClose={() => {
-            setIsFormOpen(false);
-            setEditingEntries(null);
-          }}
-          onSave={handleSaveJournal}
-          journalTypes={sampleJournalTypes}
-          initialEntries={editingEntries || undefined}
-          isEditing={!!editingEntries}
-        />
-      )}
     </Layout>
   );
-}
+};
+
+export default Journal;
