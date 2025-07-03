@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Download, FileEdit, Trash2, BookOpen } from "lucide-react";
+import { Search, Download, FileEdit, Trash2, BookOpen, FileSpreadsheet, FileText } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 const Journal = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
@@ -126,28 +126,154 @@ const Journal = () => {
     sum + (item.jurnal?.reduce((kreditSum, entry) => kreditSum + (entry.kredit || 0), 0) || 0), 0
   );
 
-  const exportData = () => {
-    const csvContent = [
-      ['ID Jurnal', 'Tanggal', 'Jenis', 'Rekening', 'Deskripsi', 'Debit', 'Kredit'],
-      ...filteredData.flatMap(item => 
-        item.jurnal?.map(entry => [
-          item.id_ju,
-          item.tanggal,
-          item.jurnal_jenis?.nm_jj,
-          entry.kode_rek,
-          entry.deskripsi,
-          entry.debit,
-          entry.kredit
-        ]) || []
-      )
-    ].map(row => row.join(',')).join('\n');
+  const exportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Laporan Jurnal Umum'],
+      [''],
+      ['Total Jurnal', filteredData.length],
+      ['Total Entries', totalEntries],
+      ['Total Debit', totalDebit],
+      ['Total Kredit', totalKredit],
+      ['Status', totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'],
+      [''],
+      ['Periode:', date?.from && date?.to ? `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}` : 'Semua']
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `jurnal-${Date.now()}.csv`;
-    a.click();
+    // Detail sheet
+    if (filteredData.length > 0) {
+      const detailData = filteredData.flatMap(jurnal => 
+        jurnal.jurnal?.map(entry => ({
+          'ID Jurnal': jurnal.id_ju,
+          'Tanggal': jurnal.tanggal,
+          'Jenis': jurnal.jurnal_jenis?.nm_jj,
+          'Kode Rekening': entry.kode_rek,
+          'Nama Rekening': entry.m_rekening?.nama_rek,
+          'Deskripsi': entry.deskripsi,
+          'Debit': entry.debit,
+          'Kredit': entry.kredit
+        })) || []
+      );
+      
+      const detailSheet = XLSX.utils.json_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Jurnal');
+    }
+
+    const fileName = `jurnal-${Date.now()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const exportToPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dateRange = date?.from && date?.to 
+      ? `${format(date.from, 'dd MMMM yyyy')} - ${format(date.to, 'dd MMMM yyyy')}`
+      : 'Semua Periode';
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Jurnal Umum</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { margin-bottom: 30px; }
+          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .jurnal-item { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; }
+          .jurnal-header { background-color: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; }
+          .table { width: 100%; border-collapse: collapse; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f9f9f9; }
+          .debit { color: #3B82F6; }
+          .credit { color: #10B981; }
+          .balanced { color: #10B981; }
+          .unbalanced { color: #EF4444; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Laporan Jurnal Umum</h1>
+          <p>Periode: ${dateRange}</p>
+        </div>
+        
+        <div class="summary">
+          <h2>Ringkasan</h2>
+          <div class="summary-item">
+            <span>Total Jurnal:</span>
+            <span><strong>${filteredData.length}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Entries:</span>
+            <span><strong>${totalEntries}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Debit:</span>
+            <span class="debit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalDebit)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Kredit:</span>
+            <span class="credit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalKredit)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Status:</span>
+            <span class="${totalDebit === totalKredit ? 'balanced' : 'unbalanced'}"><strong>${totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}</strong></span>
+          </div>
+        </div>
+
+        <div>
+          <h2>Detail Jurnal</h2>
+          ${filteredData.map(jurnal => `
+            <div class="jurnal-item">
+              <div class="jurnal-header">
+                <strong>${jurnal.id_ju}</strong> - ${jurnal.tanggal} - ${jurnal.jurnal_jenis?.nm_jj}
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Rekening</th>
+                    <th>Deskripsi</th>
+                    <th>Debit</th>
+                    <th>Kredit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${jurnal.jurnal?.map(entry => `
+                    <tr>
+                      <td>${entry.kode_rek}<br><small>${entry.m_rekening?.nama_rek || ''}</small></td>
+                      <td>${entry.deskripsi}</td>
+                      <td class="debit">${entry.debit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
+                      <td class="credit">${entry.kredit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
+                    </tr>
+                  `).join('') || ''}
+                  <tr style="border-top: 2px solid #333; font-weight: bold;">
+                    <td colspan="2">Total:</td>
+                    <td class="debit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}</td>
+                    <td class="credit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   return (
@@ -241,9 +367,13 @@ const Journal = () => {
                   dateRange={date} 
                   onDateRangeChange={setDate}
                 />
-                <Button onClick={exportData} variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
+                <Button onClick={exportToExcel} variant="outline">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Excel
+                </Button>
+                <Button onClick={exportToPDF} variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  PDF
                 </Button>
               </div>
             </div>

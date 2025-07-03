@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { Download, FileText, BarChart3, TrendingUp, Calculator } from "lucide-react";
+import { Download, FileText, BarChart3, TrendingUp, Calculator, FileSpreadsheet } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import * as XLSX from 'xlsx';
 
 const Reports = () => {
   // Set default date range to current month
@@ -70,42 +70,227 @@ const Reports = () => {
     { name: 'Kas Keluar', value: totalKasKeluar, color: '#EF4444' }
   ];
 
-  const exportSaldoRekening = () => {
-    const csvContent = [
-      ['Kode Rekening', 'Nama Rekening', 'Saldo', 'Jenis'],
-      ...(saldoData?.data?.map(item => [
-        item.kode_rek,
-        item.nama_rek,
-        item.saldo,
-        item.jenis_rek
-      ]) || [])
-    ].map(row => row.join(',')).join('\n');
+  const exportSaldoToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Laporan Saldo Rekening'],
+      [''],
+      ['Total Rekening', totalRekening],
+      [''],
+      ['Tanggal Cetak:', new Date().toLocaleString('id-ID')]
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `saldo-rekening-${Date.now()}.csv`;
-    a.click();
+    // Detail sheet
+    if (saldoData?.data?.length > 0) {
+      const detailSheet = XLSX.utils.json_to_sheet(
+        saldoData.data.map(item => ({
+          'Kode Rekening': item.kode_rek,
+          'Nama Rekening': item.nama_rek,
+          'Jenis': item.jenis_rek,
+          'Saldo': item.saldo
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Saldo Rekening');
+    }
+
+    const fileName = `saldo-rekening-${Date.now()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
-  const exportKasHarian = () => {
-    const csvContent = [
-      ['Tanggal', 'Kas Masuk', 'Kas Keluar', 'Selisih'],
-      ...(kasHarianData?.data?.map(item => [
-        item.tanggal,
-        item.kas_masuk,
-        item.kas_keluar,
-        item.selisih
-      ]) || [])
-    ].map(row => row.join(',')).join('\n');
+  const exportSaldoToPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kas-harian-${Date.now()}.csv`;
-    a.click();
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Saldo Rekening</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { margin-bottom: 30px; }
+          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .table { width: 100%; border-collapse: collapse; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f5f5f5; }
+          .neraca { color: #3B82F6; }
+          .lra { color: #10B981; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Laporan Saldo Rekening</h1>
+          <p>Tanggal Cetak: ${new Date().toLocaleString('id-ID')}</p>
+        </div>
+        
+        <div class="summary">
+          <h2>Ringkasan</h2>
+          <div class="summary-item">
+            <span>Total Rekening:</span>
+            <span><strong>${totalRekening}</strong></span>
+          </div>
+        </div>
+
+        <div>
+          <h2>Detail Saldo Rekening</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Kode Rekening</th>
+                <th>Nama Rekening</th>
+                <th>Jenis</th>
+                <th>Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${saldoData?.data?.map(item => `
+                <tr>
+                  <td>${item.kode_rek}</td>
+                  <td>${item.nama_rek}</td>
+                  <td><span class="${item.jenis_rek === 'NERACA' ? 'neraca' : 'lra'}">${item.jenis_rek}</span></td>
+                  <td>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.saldo || 0)}</td>
+                </tr>
+              `).join('') || ''}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
+  const exportKasHarianToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Laporan Kas Harian'],
+      [''],
+      ['Periode:', date?.from && date?.to ? `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}` : 'Semua'],
+      ['Total Kas Masuk', kasHarianData?.data?.reduce((sum, item) => sum + (item.kas_masuk || 0), 0) || 0],
+      ['Total Kas Keluar', kasHarianData?.data?.reduce((sum, item) => sum + (item.kas_keluar || 0), 0) || 0],
+      ['Net Cash Flow', kasHarianData?.data?.reduce((sum, item) => sum + (item.selisih || 0), 0) || 0],
+      [''],
+      ['Tanggal Cetak:', new Date().toLocaleString('id-ID')]
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+
+    // Detail sheet
+    if (kasHarianData?.data?.length > 0) {
+      const detailSheet = XLSX.utils.json_to_sheet(
+        kasHarianData.data.map(item => ({
+          'Tanggal': item.tanggal,
+          'Kas Masuk': item.kas_masuk,
+          'Kas Keluar': item.kas_keluar,
+          'Selisih': item.selisih
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Kas Harian');
+    }
+
+    const fileName = `kas-harian-${Date.now()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const exportKasHarianToPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dateRange = date?.from && date?.to 
+      ? `${format(date.from, 'dd MMMM yyyy')} - ${format(date.to, 'dd MMMM yyyy')}`
+      : 'Semua Periode';
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Kas Harian</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { margin-bottom: 30px; }
+          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .table { width: 100%; border-collapse: collapse; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f5f5f5; }
+          .positive { color: #10B981; }
+          .negative { color: #EF4444; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Laporan Kas Harian</h1>
+          <p>Periode: ${dateRange}</p>
+        </div>
+        
+        <div class="summary">
+          <h2>Ringkasan</h2>
+          <div class="summary-item">
+            <span>Total Kas Masuk:</span>
+            <span class="positive"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kasHarianData?.data?.reduce((sum, item) => sum + (item.kas_masuk || 0), 0) || 0)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Kas Keluar:</span>
+            <span class="negative"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kasHarianData?.data?.reduce((sum, item) => sum + (item.kas_keluar || 0), 0) || 0)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Net Cash Flow:</span>
+            <span class="${(kasHarianData?.data?.reduce((sum, item) => sum + (item.selisih || 0), 0) || 0) >= 0 ? 'positive' : 'negative'}"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(kasHarianData?.data?.reduce((sum, item) => sum + (item.selisih || 0), 0) || 0)}</strong></span>
+          </div>
+        </div>
+
+        <div>
+          <h2>Detail Kas Harian</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Kas Masuk</th>
+                <th>Kas Keluar</th>
+                <th>Selisih</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kasHarianData?.data?.map(item => `
+                <tr>
+                  <td>${format(new Date(item.tanggal), 'dd MMM yyyy')}</td>
+                  <td class="positive">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.kas_masuk || 0)}</td>
+                  <td class="negative">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.kas_keluar || 0)}</td>
+                  <td class="${(item.selisih || 0) >= 0 ? 'positive' : 'negative'}">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.selisih || 0)}</td>
+                </tr>
+              `).join('') || ''}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   return (
@@ -200,10 +385,16 @@ const Reports = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Laporan Saldo Rekening</CardTitle>
-                  <Button onClick={exportSaldoRekening} variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={exportSaldoToExcel} variant="outline">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </Button>
+                    <Button onClick={exportSaldoToPDF} variant="outline">
+                      <FileText className="mr-2 h-4 w-4" />
+                      PDF
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -268,9 +459,13 @@ const Reports = () => {
                         {format(date.from, 'dd MMM yyyy')} - {format(date.to, 'dd MMM yyyy')}
                       </div>
                     )}
-                    <Button onClick={exportKasHarian} variant="outline" disabled={!kasHarianData?.data?.length}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export
+                    <Button onClick={exportKasHarianToExcel} variant="outline" disabled={!kasHarianData?.data?.length}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </Button>
+                    <Button onClick={exportKasHarianToPDF} variant="outline" disabled={!kasHarianData?.data?.length}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      PDF
                     </Button>
                   </div>
                 </div>

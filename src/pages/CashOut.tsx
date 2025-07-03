@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,8 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Download, FileEdit, Trash2 } from "lucide-react";
+import { Search, Download, FileEdit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 const CashOut = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
@@ -38,6 +38,128 @@ const CashOut = () => {
   ) || [];
 
   const totalAmount = filteredData.reduce((sum, item) => sum + (item.total || 0), 0);
+
+  const exportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Laporan Kas Keluar'],
+      [''],
+      ['Total Transaksi', filteredData.length],
+      ['Total Amount', totalAmount],
+      [''],
+      ['Periode:', date?.from && date?.to ? `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}` : 'Semua']
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+
+    // Detail sheet
+    if (filteredData.length > 0) {
+      const detailSheet = XLSX.utils.json_to_sheet(
+        filteredData.map(item => ({
+          'ID': item.id_kk,
+          'Tanggal': item.tanggal,
+          'Bagian/Seksi': item.bagian_seksi,
+          'Rekening': item.kode_rek,
+          'Nama Rekening': item.m_rekening?.nama_rek,
+          'Keterangan': item.keterangan,
+          'Penerima': item.penerima,
+          'Jumlah': item.total
+        }))
+      );
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Kas Keluar');
+    }
+
+    const fileName = `kas-keluar-${Date.now()}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const exportToPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const dateRange = date?.from && date?.to 
+      ? `${format(date.from, 'dd MMMM yyyy')} - ${format(date.to, 'dd MMMM yyyy')}`
+      : 'Semua Periode';
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Laporan Kas Keluar</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .summary { margin-bottom: 30px; }
+          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .table th { background-color: #f5f5f5; }
+          .negative { color: #EF4444; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Laporan Kas Keluar</h1>
+          <p>Periode: ${dateRange}</p>
+        </div>
+        
+        <div class="summary">
+          <h2>Ringkasan</h2>
+          <div class="summary-item">
+            <span>Total Transaksi:</span>
+            <span><strong>${filteredData.length}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Jumlah:</span>
+            <span class="negative"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalAmount)}</strong></span>
+          </div>
+        </div>
+
+        <div>
+          <h2>Detail Transaksi</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tanggal</th>
+                <th>Bagian/Seksi</th>
+                <th>Rekening</th>
+                <th>Keterangan</th>
+                <th>Penerima</th>
+                <th>Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredData.map(item => `
+                <tr>
+                  <td>${item.id_kk}</td>
+                  <td>${item.tanggal}</td>
+                  <td>${item.bagian_seksi}</td>
+                  <td>${item.kode_rek}<br><small>${item.m_rekening?.nama_rek || ''}</small></td>
+                  <td>${item.keterangan}</td>
+                  <td>${item.penerima}</td>
+                  <td class="negative">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   const exportData = () => {
     const csvContent = [
@@ -132,9 +254,13 @@ const CashOut = () => {
                   dateRange={date} 
                   onDateRangeChange={setDate}
                 />
-                <Button onClick={exportData} variant="outline">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export
+                <Button onClick={exportToExcel} variant="outline">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Excel
+                </Button>
+                <Button onClick={exportToPDF} variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  PDF
                 </Button>
               </div>
             </div>
