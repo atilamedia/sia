@@ -49,16 +49,16 @@ const Index = () => {
 
   return (
     <Layout title="Dashboard">
-      <div className="space-y-8 animate-fade-in">
+      <div className="space-y-6 md:space-y-8 animate-fade-in">
         {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Kas</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Kas</CardTitle>
+              <DollarSign className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg md:text-2xl font-bold">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
@@ -73,11 +73,11 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Kas Masuk</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
+              <CardTitle className="text-xs md:text-sm font-medium">Kas Masuk</CardTitle>
+              <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-lg md:text-2xl font-bold text-green-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
@@ -92,11 +92,11 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Kas Keluar</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
+              <CardTitle className="text-xs md:text-sm font-medium">Kas Keluar</CardTitle>
+              <TrendingDown className="h-3 w-3 md:h-4 md:w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-lg md:text-2xl font-bold text-red-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
@@ -111,11 +111,11 @@ const Index = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Jurnal Entries</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Jurnal Entries</CardTitle>
+              <BookOpen className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalJurnalEntries}</div>
+              <div className="text-lg md:text-2xl font-bold">{totalJurnalEntries}</div>
               <p className="text-xs text-muted-foreground">
                 Total entries
               </p>
@@ -123,9 +123,9 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <Card className="p-6 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+          <Card className="p-4 md:p-6 overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
               <h3 className="text-lg font-medium">Trend Arus Kas</h3>
               <div className="text-xs flex items-center space-x-3">
                 <div className="flex items-center">
@@ -138,7 +138,7 @@ const Index = () => {
                 </div>
               </div>
             </div>
-            <div className="h-[300px]">
+            <div className="h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={cashFlowData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -181,11 +181,11 @@ const Index = () => {
             </div>
           </Card>
           
-          <Card className="p-6 overflow-hidden">
+          <Card className="p-4 md:p-6 overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium">Perbandingan Kas Masuk & Keluar</h3>
             </div>
-            <div className="h-[300px]">
+            <div className="h-[250px] md:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={cashFlowData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />

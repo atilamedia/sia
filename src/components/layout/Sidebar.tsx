@@ -1,121 +1,162 @@
 
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
 import { 
-  LayoutDashboard, 
-  ArrowLeftRight, 
-  ArrowDownRight, 
-  ArrowUpRight, 
-  BookText, 
-  FileBarChart, 
-  Wallet,
-  BarChart2,
+  Home, 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  BookOpen, 
+  BarChart3, 
+  FileText,
+  Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Menu,
+  X
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-const navItems = [
-  { 
-    path: "/", 
-    name: "Dashboard", 
-    icon: LayoutDashboard 
-  },
-  { 
-    path: "/cash-flow", 
-    name: "Arus Kas", 
-    icon: ArrowLeftRight 
-  },
-  { 
-    path: "/cash-out", 
-    name: "Kas Keluar", 
-    icon: ArrowDownRight 
-  },
-  { 
-    path: "/cash-in", 
-    name: "Kas Masuk", 
-    icon: ArrowUpRight 
-  },
-  { 
-    path: "/journal", 
-    name: "Jurnal", 
-    icon: BookText 
-  },
-  { 
-    path: "/reports", 
-    name: "Laporan", 
-    icon: FileBarChart 
-  },
-  { 
-    path: "/accounts", 
-    name: "Rekening", 
-    icon: Wallet 
-  }
+const navigation = [
+  { name: "Dashboard", href: "/", icon: Home },
+  { name: "Kas Masuk", href: "/cash-in", icon: TrendingUp },
+  { name: "Kas Keluar", href: "/cash-out", icon: TrendingDown },
+  { name: "Jurnal", href: "/journal", icon: BookOpen },
+  { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
+  { name: "Laporan", href: "/reports", icon: FileText },
+  { name: "Akun", href: "/accounts", icon: Users },
+  { name: "Demo SIA", href: "/sia-demo", icon: DollarSign },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="fixed top-4 left-4 z-50 md:hidden"
+          onClick={() => setMobileOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        {/* Mobile Sidebar Overlay */}
+        {mobileOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+
+        {/* Mobile Sidebar */}
+        <div
+          className={cn(
+            "fixed left-0 top-0 z-50 h-full w-64 bg-background border-r transform transition-transform duration-300 md:hidden",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-6 w-6 text-primary" />
+              <span className="font-bold text-lg">SIA RSHD</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <nav className="p-4 space-y-2">
+            {navigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )
+                }
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span>{item.name}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div 
+    <div
       className={cn(
-        "fixed top-0 left-0 z-40 h-screen transition-all duration-300 ease-in-out",
+        "fixed left-0 top-0 z-30 h-full bg-background border-r transition-all duration-300 hidden md:flex flex-col",
         collapsed ? "w-[70px]" : "w-[250px]"
       )}
     >
-      <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-sm">
-        {/* Sidebar header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-          {!collapsed && (
-            <div className="flex items-center">
-              <BarChart2 className="w-6 h-6 text-primary" />
-              <span className="ml-2 font-semibold">SIA RSHD</span>
-            </div>
-          )}
-          <button 
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-sidebar-accent transition-colors"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => cn(
-                "flex items-center px-2 py-2 rounded-md transition-all duration-200 group",
-                isActive 
-                  ? "bg-sidebar-accent text-primary font-medium" 
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50",
-                collapsed && "justify-center"
-              )}
-            >
-              <item.icon className={cn(
-                "w-5 h-5",
-                collapsed ? "mr-0" : "mr-3"
-              )} />
-              {!collapsed && <span>{item.name}</span>}
-              {collapsed && (
-                <div className="absolute left-full ml-6 px-2 py-1 bg-popover rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
-                  {item.name}
-                </div>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Sidebar footer */}
-        <div className="p-4 border-t border-sidebar-border">
-          <div className={cn(
-            "text-xs text-sidebar-foreground/70 transition-opacity duration-200",
-            collapsed && "opacity-0"
-          )}>
-            &copy; {new Date().getFullYear()} SIA RSHD
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b">
+        {!collapsed && (
+          <div className="flex items-center space-x-2">
+            <DollarSign className="h-6 w-6 text-primary" />
+            <span className="font-bold text-lg">SIA RSHD</span>
           </div>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn("flex-shrink-0", collapsed && "mx-auto")}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {navigation.map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.href}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                collapsed && "justify-center"
+              )
+            }
+          >
+            <item.icon className="h-5 w-5 flex-shrink-0" />
+            {!collapsed && <span>{item.name}</span>}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t">
+        <div className="text-xs text-muted-foreground text-center">
+          {!collapsed && "RSUD H. Damanhuri Barabai"}
         </div>
       </div>
     </div>
