@@ -522,6 +522,100 @@ async function handleJurnal(req: Request, supabase: any) {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
+    case 'PUT':
+      const updateData = await req.json();
+      const { id_ju, entries: updateEntries, ...updateHeaderData } = updateData;
+      
+      // Update header jurnal
+      const { data: updatedHeader, error: updateHeaderError } = await supabase
+        .from('jurnalumum')
+        .update({
+          ...updateHeaderData,
+          last_update: new Date().toISOString()
+        })
+        .eq('id_ju', id_ju)
+        .select()
+        .single();
+
+      if (updateHeaderError) {
+        console.error('Jurnal header update error:', updateHeaderError);
+        throw updateHeaderError;
+      }
+
+      // Delete existing entries and insert new ones
+      const { error: deleteEntriesError } = await supabase
+        .from('jurnal')
+        .delete()
+        .eq('kode', id_ju);
+
+      if (deleteEntriesError) {
+        console.error('Jurnal entries delete error:', deleteEntriesError);
+        throw deleteEntriesError;
+      }
+
+      // Insert updated entries
+      const updatedJurnalEntries = updateEntries.map((entry: any) => ({
+        ...entry,
+        kode: id_ju,
+        tanggal: updateHeaderData.tanggal || updatedHeader.tanggal
+      }));
+
+      const { data: updatedEntries, error: insertEntriesError } = await supabase
+        .from('jurnal')
+        .insert(updatedJurnalEntries)
+        .select();
+
+      if (insertEntriesError) {
+        console.error('Jurnal entries insert error:', insertEntriesError);
+        throw insertEntriesError;
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          data: { header: updatedHeader, entries: updatedEntries }, 
+          message: 'Jurnal berhasil diupdate' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    case 'DELETE':
+      const deleteUrl = new URL(req.url);
+      const jurnalId = deleteUrl.searchParams.get('id_ju');
+      
+      if (!jurnalId) {
+        return new Response(
+          JSON.stringify({ error: 'ID jurnal diperlukan' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Delete entries first (due to foreign key constraint)
+      const { error: deleteEntriesErr } = await supabase
+        .from('jurnal')
+        .delete()
+        .eq('kode', jurnalId);
+
+      if (deleteEntriesErr) {
+        console.error('Delete jurnal entries error:', deleteEntriesErr);
+        throw deleteEntriesErr;
+      }
+
+      // Delete header
+      const { error: deleteHeaderErr } = await supabase
+        .from('jurnalumum')
+        .delete()
+        .eq('id_ju', jurnalId);
+
+      if (deleteHeaderErr) {
+        console.error('Delete jurnal header error:', deleteHeaderErr);
+        throw deleteHeaderErr;
+      }
+
+      return new Response(
+        JSON.stringify({ message: 'Jurnal berhasil dihapus' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
     default:
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),

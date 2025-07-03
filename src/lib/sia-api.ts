@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 const SIA_API_URL = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
@@ -164,6 +163,19 @@ export class SiaApiClient {
     return this.callApi('jurnal', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateJurnal(id_ju: string, data: any): Promise<{ data: any; message: string }> {
+    return this.callApi('jurnal', {
+      method: 'PUT',
+      body: JSON.stringify({ id_ju, ...data }),
+    });
+  }
+
+  async deleteJurnal(id_ju: string): Promise<{ message: string }> {
+    return this.callApi(`jurnal?id_ju=${id_ju}`, {
+      method: 'DELETE',
     });
   }
 

@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { JurnalForm } from "@/components/sia/JurnalForm";
+import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,27 @@ import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Search, Download, FileEdit, Trash2, BookOpen } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const Journal = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [editingJurnal, setEditingJurnal] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingJurnalId, setDeletingJurnalId] = useState<string>("");
+  const { toast } = useToast();
 
   const { data: jurnalData, isLoading, refetch } = useQuery({
     queryKey: ['jurnal', date?.from, date?.to, refreshTrigger],
@@ -28,6 +44,72 @@ const Journal = () => {
   const handleFormSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
     refetch();
+  };
+
+  const handleEdit = (jurnal: any) => {
+    console.log('Editing jurnal:', jurnal);
+    setEditingJurnal(jurnal);
+    setIsEditFormOpen(true);
+  };
+
+  const handleDelete = (id_ju: string) => {
+    setDeletingJurnalId(id_ju);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await siaApi.deleteJurnal(deletingJurnalId);
+      toast({
+        title: "Berhasil",
+        description: "Jurnal berhasil dihapus",
+      });
+      handleFormSuccess();
+    } catch (error) {
+      console.error('Delete jurnal error:', error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus jurnal",
+        variant: "destructive",
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setDeletingJurnalId("");
+  };
+
+  const handleEditSave = async (entries: any[]) => {
+    try {
+      if (!editingJurnal) return;
+      
+      const updateData = {
+        tanggal: editingJurnal.tanggal,
+        usernya: editingJurnal.usernya,
+        id_div: editingJurnal.id_div,
+        id_jj: editingJurnal.id_jj,
+        entries: entries.map(entry => ({
+          kode_rek: entry.accountCode,
+          deskripsi: entry.description,
+          debit: entry.debit,
+          kredit: entry.credit
+        }))
+      };
+
+      await siaApi.updateJurnal(editingJurnal.id_ju, updateData);
+      toast({
+        title: "Berhasil",
+        description: "Jurnal berhasil diupdate",
+      });
+      setIsEditFormOpen(false);
+      setEditingJurnal(null);
+      handleFormSuccess();
+    } catch (error) {
+      console.error('Update jurnal error:', error);
+      toast({
+        title: "Error",
+        description: "Gagal mengupdate jurnal",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredData = jurnalData?.data?.filter(item => 
@@ -187,10 +269,20 @@ const Journal = () => {
                           </span>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEdit(jurnal)}
+                          >
                             <FileEdit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(jurnal.id_ju)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -267,6 +359,49 @@ const Journal = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Form Dialog */}
+      <JournalEntryForm
+        isOpen={isEditFormOpen}
+        onClose={() => {
+          setIsEditFormOpen(false);
+          setEditingJurnal(null);
+        }}
+        onSave={handleEditSave}
+        journalTypes={[{ id: 'JU', name: 'Jurnal Umum' }]}
+        initialEntries={editingJurnal?.jurnal?.map((entry: any) => ({
+          code: editingJurnal.id_ju,
+          date: editingJurnal.tanggal,
+          accountCode: entry.kode_rek,
+          description: entry.deskripsi,
+          debit: entry.debit,
+          credit: entry.kredit,
+          user: editingJurnal.usernya,
+          createdAt: editingJurnal.at_create
+        }))}
+        isEditing={true}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jurnal {deletingJurnalId}? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
