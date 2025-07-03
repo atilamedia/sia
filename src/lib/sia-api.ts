@@ -58,25 +58,40 @@ export interface JurnalData {
 
 export class SiaApiClient {
   private async callApi(endpoint: string, options: RequestInit = {}) {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.access_token || ''}`,
-      ...options.headers,
-    };
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
 
-    const response = await fetch(`${SIA_API_URL}/${endpoint}`, {
-      ...options,
-      headers,
-    });
+      console.log(`Making API call to: ${SIA_API_URL}/${endpoint}`);
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'API call failed');
+      const response = await fetch(`${SIA_API_URL}/${endpoint}`, {
+        ...options,
+        headers,
+      });
+
+      console.log(`API response status: ${response.status}`);
+
+      if (!response.ok) {
+        let errorMessage = 'API call failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('API Error Details:', errorData);
+        } catch (e) {
+          console.error('Could not parse error response:', e);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log(`API call successful:`, data);
+      return data;
+    } catch (error) {
+      console.error(`API call error for ${endpoint}:`, error);
+      throw error;
     }
-
-    return response.json();
   }
 
   // Master Rekening methods

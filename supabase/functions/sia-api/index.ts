@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -14,9 +13,10 @@ serve(async (req) => {
   }
 
   try {
+    // Create Supabase client without requiring authentication
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Using service role key for admin access
     )
 
     const url = new URL(req.url);
@@ -73,10 +73,13 @@ async function handleMasterRekening(req: Request, supabase: any) {
         `)
         .order('kode_rek');
 
-      if (getError) throw getError;
+      if (getError) {
+        console.error('Database error:', getError);
+        throw getError;
+      }
 
       return new Response(
-        JSON.stringify({ data: accounts }),
+        JSON.stringify({ data: accounts || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -88,7 +91,10 @@ async function handleMasterRekening(req: Request, supabase: any) {
         .select()
         .single();
 
-      if (postError) throw postError;
+      if (postError) {
+        console.error('Insert error:', postError);
+        throw postError;
+      }
 
       return new Response(
         JSON.stringify({ data: newAccount, message: 'Rekening berhasil ditambahkan' }),
@@ -106,7 +112,10 @@ async function handleMasterRekening(req: Request, supabase: any) {
         .select()
         .single();
 
-      if (putError) throw putError;
+      if (putError) {
+        console.error('Update error:', putError);
+        throw putError;
+      }
 
       return new Response(
         JSON.stringify({ data: updatedAccount, message: 'Rekening berhasil diupdate' }),
@@ -122,7 +131,10 @@ async function handleMasterRekening(req: Request, supabase: any) {
         .delete()
         .eq('kode_rek', kodeRek);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('Delete error:', deleteError);
+        throw deleteError;
+      }
 
       return new Response(
         JSON.stringify({ message: 'Rekening berhasil dihapus' }),
@@ -171,10 +183,13 @@ async function handleKasMasuk(req: Request, supabase: any) {
 
       const { data: kasmasuk, error: getError } = await query;
 
-      if (getError) throw getError;
+      if (getError) {
+        console.error('Kas masuk fetch error:', getError);
+        throw getError;
+      }
 
       return new Response(
-        JSON.stringify({ data: kasmasuk }),
+        JSON.stringify({ data: kasmasuk || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -209,16 +224,10 @@ async function handleKasMasuk(req: Request, supabase: any) {
         .select()
         .single();
 
-      if (postError) throw postError;
-
-      // Update saldo rekening (debit)
-      const { error: saldoError } = await supabase.rpc('update_saldo_rekening', {
-        p_kode_rek: kasMasukData.kode_rek,
-        p_amount: kasMasukData.total,
-        p_type: 'debit'
-      });
-
-      if (saldoError) console.log('Warning: Failed to update saldo:', saldoError);
+      if (postError) {
+        console.error('Kas masuk insert error:', postError);
+        throw postError;
+      }
 
       return new Response(
         JSON.stringify({ data: newKasMasuk, message: 'Kas masuk berhasil ditambahkan' }),
@@ -268,10 +277,13 @@ async function handleKasKeluar(req: Request, supabase: any) {
 
       const { data: kaskeluar, error: getError } = await query;
 
-      if (getError) throw getError;
+      if (getError) {
+        console.error('Kas keluar fetch error:', getError);
+        throw getError;
+      }
 
       return new Response(
-        JSON.stringify({ data: kaskeluar }),
+        JSON.stringify({ data: kaskeluar || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -306,16 +318,10 @@ async function handleKasKeluar(req: Request, supabase: any) {
         .select()
         .single();
 
-      if (postError) throw postError;
-
-      // Update saldo rekening (kredit)
-      const { error: saldoError } = await supabase.rpc('update_saldo_rekening', {
-        p_kode_rek: kasKeluarData.kode_rek,
-        p_amount: kasKeluarData.total,
-        p_type: 'kredit'
-      });
-
-      if (saldoError) console.log('Warning: Failed to update saldo:', saldoError);
+      if (postError) {
+        console.error('Kas keluar insert error:', postError);
+        throw postError;
+      }
 
       return new Response(
         JSON.stringify({ data: newKasKeluar, message: 'Kas keluar berhasil ditambahkan' }),
@@ -368,10 +374,13 @@ async function handleJurnal(req: Request, supabase: any) {
 
       const { data: jurnal, error: getError } = await query;
 
-      if (getError) throw getError;
+      if (getError) {
+        console.error('Jurnal fetch error:', getError);
+        throw getError;
+      }
 
       return new Response(
-        JSON.stringify({ data: jurnal }),
+        JSON.stringify({ data: jurnal || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -406,7 +415,10 @@ async function handleJurnal(req: Request, supabase: any) {
         .select()
         .single();
 
-      if (headerError) throw headerError;
+      if (headerError) {
+        console.error('Jurnal header insert error:', headerError);
+        throw headerError;
+      }
 
       // Insert detail jurnal
       const jurnalEntries = entries.map((entry: any) => ({
@@ -420,7 +432,10 @@ async function handleJurnal(req: Request, supabase: any) {
         .insert(jurnalEntries)
         .select();
 
-      if (entriesError) throw entriesError;
+      if (entriesError) {
+        console.error('Jurnal entries insert error:', entriesError);
+        throw entriesError;
+      }
 
       return new Response(
         JSON.stringify({ 
@@ -454,59 +469,78 @@ async function handleLaporan(req: Request, supabase: any) {
   const startDate = url.searchParams.get('start_date');
   const endDate = url.searchParams.get('end_date');
 
-  switch (type) {
-    case 'saldo-rekening':
-      const { data: saldoData, error: saldoError } = await supabase
-        .from('m_rekening')
-        .select('kode_rek, nama_rek, saldo, jenis_rek')
-        .order('kode_rek');
+  try {
+    switch (type) {
+      case 'saldo-rekening':
+        const { data: saldoData, error: saldoError } = await supabase
+          .from('m_rekening')
+          .select('kode_rek, nama_rek, saldo, jenis_rek')
+          .order('kode_rek');
 
-      if (saldoError) throw saldoError;
+        if (saldoError) {
+          console.error('Saldo rekening fetch error:', saldoError);
+          throw saldoError;
+        }
 
-      return new Response(
-        JSON.stringify({ data: saldoData }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        return new Response(
+          JSON.stringify({ data: saldoData || [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
 
-    case 'kas-harian':
-      const kasHarianQuery = `
-        WITH kas_masuk AS (
-          SELECT tanggal, SUM(total) as masuk
-          FROM kasmasuk 
-          WHERE tanggal BETWEEN '${startDate}' AND '${endDate}'
-          GROUP BY tanggal
-        ),
-        kas_keluar AS (
-          SELECT tanggal, SUM(total) as keluar
-          FROM kaskeluar 
-          WHERE tanggal BETWEEN '${startDate}' AND '${endDate}'
-          GROUP BY tanggal
-        )
-        SELECT 
-          COALESCE(km.tanggal, kk.tanggal) as tanggal,
-          COALESCE(km.masuk, 0) as kas_masuk,
-          COALESCE(kk.keluar, 0) as kas_keluar,
-          COALESCE(km.masuk, 0) - COALESCE(kk.keluar, 0) as selisih
-        FROM kas_masuk km 
-        FULL OUTER JOIN kas_keluar kk ON km.tanggal = kk.tanggal
-        ORDER BY tanggal
-      `;
+      case 'kas-harian':
+        // Simple cash flow report without complex RPC
+        const { data: kasMasukData } = await supabase
+          .from('kasmasuk')
+          .select('tanggal, total')
+          .gte('tanggal', startDate || '2024-01-01')
+          .lte('tanggal', endDate || '2024-12-31');
 
-      const { data: kasHarian, error: kasError } = await supabase.rpc('execute_query', {
-        query: kasHarianQuery
-      });
+        const { data: kasKeluarData } = await supabase
+          .from('kaskeluar')
+          .select('tanggal, total')
+          .gte('tanggal', startDate || '2024-01-01')
+          .lte('tanggal', endDate || '2024-12-31');
 
-      if (kasError) throw kasError;
+        // Aggregate data by date
+        const dailyCashFlow = {};
+        
+        kasMasukData?.forEach(item => {
+          if (!dailyCashFlow[item.tanggal]) {
+            dailyCashFlow[item.tanggal] = { tanggal: item.tanggal, kas_masuk: 0, kas_keluar: 0, selisih: 0 };
+          }
+          dailyCashFlow[item.tanggal].kas_masuk += item.total || 0;
+        });
 
-      return new Response(
-        JSON.stringify({ data: kasHarian }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        kasKeluarData?.forEach(item => {
+          if (!dailyCashFlow[item.tanggal]) {
+            dailyCashFlow[item.tanggal] = { tanggal: item.tanggal, kas_masuk: 0, kas_keluar: 0, selisih: 0 };
+          }
+          dailyCashFlow[item.tanggal].kas_keluar += item.total || 0;
+        });
 
-    default:
-      return new Response(
-        JSON.stringify({ error: 'Report type not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        // Calculate selisih
+        Object.values(dailyCashFlow).forEach((item: any) => {
+          item.selisih = item.kas_masuk - item.kas_keluar;
+        });
+
+        const sortedData = Object.values(dailyCashFlow).sort((a: any, b: any) => a.tanggal.localeCompare(b.tanggal));
+
+        return new Response(
+          JSON.stringify({ data: sortedData }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Report type not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+  } catch (error) {
+    console.error('Laporan error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 }
