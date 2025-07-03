@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Home, 
@@ -27,7 +26,6 @@ const navigation = [
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Akun", href: "/accounts", icon: Users },
-  { name: "Demo SIA", href: "/sia-demo", icon: DollarSign },
 ];
 
 export function Sidebar() {
