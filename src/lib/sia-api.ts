@@ -105,10 +105,10 @@ export class SiaApiClient {
     });
   }
 
-  async updateMasterRekening(data: MasterRekening): Promise<{ data: MasterRekening; message: string }> {
+  async updateMasterRekening(kodeRek: string, data: Omit<MasterRekening, 'created_at' | 'updated_at'>): Promise<{ data: MasterRekening; message: string }> {
     return this.callApi('master-rekening', {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, kode_rek: kodeRek }),
     });
   }
 
@@ -177,6 +177,11 @@ export class SiaApiClient {
     return this.callApi(`jurnal?id_ju=${id_ju}`, {
       method: 'DELETE',
     });
+  }
+
+  // Jurnal Jenis methods
+  async getJurnalJenis(): Promise<{ data: any[] }> {
+    return this.callApi('jurnal-jenis');
   }
 
   // Laporan methods

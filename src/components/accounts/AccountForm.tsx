@@ -22,7 +22,7 @@ const accountSchema = z.object({
   nama_rek: z.string().min(1, "Nama rekening diperlukan"),
   level: z.coerce.number().int().positive(),
   k_level: z.enum(["Induk", "Detail Kas", "Detail Bk", "Detail", "Sendiri"]),
-  rek_induk: z.string().optional(),
+  rek_induk: z.string().default(""),
   id_div: z.string().default("01"),
   jenis_rek: z.enum(["NERACA", "LRA", "LO"]),
   saldo: z.coerce.number().default(0),
@@ -61,11 +61,23 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
 
   async function handleSubmit(data: AccountFormValues) {
     try {
+      // Ensure all required fields are present
+      const submitData = {
+        kode_rek: data.kode_rek,
+        nama_rek: data.nama_rek,
+        level: data.level,
+        k_level: data.k_level,
+        rek_induk: data.rek_induk || "",
+        id_div: data.id_div,
+        jenis_rek: data.jenis_rek,
+        saldo: data.saldo,
+      };
+
       if (isEditMode) {
-        await siaApi.updateMasterRekening(editData.kode_rek, data);
+        await siaApi.updateMasterRekening(editData.kode_rek, submitData);
         toast.success("Rekening berhasil diperbarui");
       } else {
-        await siaApi.createMasterRekening(data);
+        await siaApi.createMasterRekening(submitData);
         toast.success("Rekening berhasil ditambahkan");
       }
       onSuccess();
