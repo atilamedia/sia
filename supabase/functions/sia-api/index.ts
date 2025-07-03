@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -159,6 +160,7 @@ async function handleKasMasuk(req: Request, supabase: any) {
       const startDate = url.searchParams.get('start_date');
       const endDate = url.searchParams.get('end_date');
 
+      // Get kas masuk data first
       let query = supabase
         .from('kasmasuk')
         .select(`
@@ -172,8 +174,7 @@ async function handleKasMasuk(req: Request, supabase: any) {
           usernya,
           id_div,
           at_create,
-          last_update,
-          m_rekening!kasmasuk_kode_rek_fkey(kode_rek, nama_rek)
+          last_update
         `)
         .order('tanggal', { ascending: false });
 
@@ -188,8 +189,26 @@ async function handleKasMasuk(req: Request, supabase: any) {
         throw getError;
       }
 
+      // Get rekening data separately and merge
+      const rekeningCodes = [...new Set(kasmasuk?.map(item => item.kode_rek) || [])];
+      
+      let enrichedData = kasmasuk || [];
+      
+      if (rekeningCodes.length > 0) {
+        const { data: rekeningData } = await supabase
+          .from('m_rekening')
+          .select('kode_rek, nama_rek')
+          .in('kode_rek', rekeningCodes);
+
+        // Merge rekening data
+        enrichedData = kasmasuk?.map(item => ({
+          ...item,
+          m_rekening: rekeningData?.find(rek => rek.kode_rek === item.kode_rek) || null
+        })) || [];
+      }
+
       return new Response(
-        JSON.stringify({ data: kasmasuk || [] }),
+        JSON.stringify({ data: enrichedData }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -252,6 +271,7 @@ async function handleKasKeluar(req: Request, supabase: any) {
       const startDate = url.searchParams.get('start_date');
       const endDate = url.searchParams.get('end_date');
 
+      // Get kas keluar data first
       let query = supabase
         .from('kaskeluar')
         .select(`
@@ -266,8 +286,7 @@ async function handleKasKeluar(req: Request, supabase: any) {
           usernya,
           id_div,
           at_create,
-          last_update,
-          m_rekening!kaskeluar_kode_rek_fkey(kode_rek, nama_rek)
+          last_update
         `)
         .order('tanggal', { ascending: false });
 
@@ -282,8 +301,26 @@ async function handleKasKeluar(req: Request, supabase: any) {
         throw getError;
       }
 
+      // Get rekening data separately and merge
+      const rekeningCodes = [...new Set(kaskeluar?.map(item => item.kode_rek) || [])];
+      
+      let enrichedData = kaskeluar || [];
+      
+      if (rekeningCodes.length > 0) {
+        const { data: rekeningData } = await supabase
+          .from('m_rekening')
+          .select('kode_rek, nama_rek')
+          .in('kode_rek', rekeningCodes);
+
+        // Merge rekening data
+        enrichedData = kaskeluar?.map(item => ({
+          ...item,
+          m_rekening: rekeningData?.find(rek => rek.kode_rek === item.kode_rek) || null
+        })) || [];
+      }
+
       return new Response(
-        JSON.stringify({ data: kaskeluar || [] }),
+        JSON.stringify({ data: enrichedData }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
@@ -346,6 +383,7 @@ async function handleJurnal(req: Request, supabase: any) {
       const startDate = url.searchParams.get('start_date');
       const endDate = url.searchParams.get('end_date');
 
+      // Get jurnal umum data first
       let query = supabase
         .from('jurnalumum')
         .select(`
@@ -356,15 +394,7 @@ async function handleJurnal(req: Request, supabase: any) {
           id_jj,
           at_create,
           last_update,
-          is_mutasi,
-          jurnal_jenis!jurnalumum_id_jj_fkey(id_jj, nm_jj),
-          jurnal!jurnal_kode_fkey(
-            kode_rek,
-            deskripsi,
-            debit,
-            kredit,
-            m_rekening!jurnal_kode_rek_fkey(kode_rek, nama_rek)
-          )
+          is_mutasi
         `)
         .order('tanggal', { ascending: false });
 
@@ -372,15 +402,62 @@ async function handleJurnal(req: Request, supabase: any) {
         query = query.gte('tanggal', startDate).lte('tanggal', endDate);
       }
 
-      const { data: jurnal, error: getError } = await query;
+      const { data: jurnalumum, error: getError } = await query;
 
       if (getError) {
         console.error('Jurnal fetch error:', getError);
         throw getError;
       }
 
+      // Get jurnal jenis data separately
+      const jenisIds = [...new Set(jurnalumum?.map(item => item.id_jj) || [])];
+      let jenisData = [];
+      
+      if (jenisIds.length > 0) {
+        const { data: jenisResult } = await supabase
+          .from('jurnal_jenis')
+          .select('id_jj, nm_jj')
+          .in('id_jj', jenisIds);
+        jenisData = jenisResult || [];
+      }
+
+      // Get jurnal detail data separately
+      const jurnalIds = jurnalumum?.map(item => item.id_ju) || [];
+      let detailData = [];
+      let rekeningDetailData = [];
+      
+      if (jurnalIds.length > 0) {
+        const { data: detailResult } = await supabase
+          .from('jurnal')
+          .select('kode, kode_rek, deskripsi, debit, kredit')
+          .in('kode', jurnalIds);
+        detailData = detailResult || [];
+
+        // Get rekening data for detail
+        const detailRekeningCodes = [...new Set(detailData.map(item => item.kode_rek))];
+        if (detailRekeningCodes.length > 0) {
+          const { data: rekeningResult } = await supabase
+            .from('m_rekening')
+            .select('kode_rek, nama_rek')
+            .in('kode_rek', detailRekeningCodes);
+          rekeningDetailData = rekeningResult || [];
+        }
+      }
+
+      // Merge all data
+      const enrichedData = jurnalumum?.map(item => ({
+        ...item,
+        jurnal_jenis: jenisData.find(jenis => jenis.id_jj === item.id_jj) || null,
+        jurnal: detailData
+          .filter(detail => detail.kode === item.id_ju)
+          .map(detail => ({
+            ...detail,
+            m_rekening: rekeningDetailData.find(rek => rek.kode_rek === detail.kode_rek) || null
+          }))
+      })) || [];
+
       return new Response(
-        JSON.stringify({ data: jurnal || [] }),
+        JSON.stringify({ data: enrichedData }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
