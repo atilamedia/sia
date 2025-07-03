@@ -29,6 +29,8 @@ serve(async (req) => {
     switch (path) {
       case 'master-rekening':
         return await handleMasterRekening(req, supabaseClient);
+      case 'jurnal-jenis':
+        return await handleJurnalJenis(req, supabaseClient);
       case 'kas-masuk':
         return await handleKasMasuk(req, supabaseClient);
       case 'kas-keluar':
@@ -139,6 +141,40 @@ async function handleMasterRekening(req: Request, supabase: any) {
 
       return new Response(
         JSON.stringify({ message: 'Rekening berhasil dihapus' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    default:
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+  }
+}
+
+// Handle Jurnal Jenis operations
+async function handleJurnalJenis(req: Request, supabase: any) {
+  const method = req.method;
+
+  switch (method) {
+    case 'GET':
+      const { data: jurnalJenis, error: getError } = await supabase
+        .from('jurnal_jenis')
+        .select(`
+          id_jj,
+          nm_jj,
+          is_default,
+          created_at
+        `)
+        .order('id_jj');
+
+      if (getError) {
+        console.error('Database error:', getError);
+        throw getError;
+      }
+
+      return new Response(
+        JSON.stringify({ data: jurnalJenis || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
