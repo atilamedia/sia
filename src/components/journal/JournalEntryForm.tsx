@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,12 @@ export function JournalEntryForm({
         const firstEntry = initialEntries[0];
         setJournalCode(firstEntry.code || "");
         setJournalDate(firstEntry.date || formatDate(new Date()));
+        
+        // Find matching journal type (fallback to first available)
+        const matchingType = journalTypes.find(type => type.id === 'JU') || journalTypes[0];
+        if (matchingType) {
+          setJournalType(matchingType.id);
+        }
         
         // Map all entries to form format
         const mappedEntries = initialEntries.map(entry => ({
