@@ -32,7 +32,7 @@ const Journal = () => {
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [editingJurnal, setEditingJurnal] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletingJrnalId, setDeletingJurnalId] = useState<string>("");
+  const [deletingJournalId, setDeletingJournalId] = useState<string>("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -56,13 +56,13 @@ const Journal = () => {
   };
 
   const handleDelete = (id_ju: string) => {
-    setDeletingJurnalId(id_ju);
+    setDeletingJournalId(id_ju);
     setIsDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
     try {
-      await siaApi.deleteJurnal(deletingJrnalId);
+      await siaApi.deleteJurnal(deletingJournalId);
       toast({
         title: "Berhasil",
         description: "Jurnal berhasil dihapus",
@@ -77,7 +77,7 @@ const Journal = () => {
       });
     }
     setIsDeleteDialogOpen(false);
-    setDeletingJurnalId("");
+    setDeletingJournalId("");
   };
 
   const handleEditSave = async (entries: any[]) => {
@@ -691,7 +691,7 @@ const Journal = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus jurnal {deletingJrnalId}? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus jurnal {deletingJournalId}? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
