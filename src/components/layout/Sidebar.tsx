@@ -26,7 +26,7 @@ const navigation = [
   { name: "Jurnal", href: "/journal", icon: BookOpen },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
   { name: "Laporan", href: "/reports", icon: FileText },
-  { name: "Akun", href: "/accounts", icon: Users },
+  { name: "Akun Rekening", href: "/accounts", icon: Users },
 ];
 
 interface SidebarProps {
