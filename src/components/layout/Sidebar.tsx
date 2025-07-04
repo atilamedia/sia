@@ -79,7 +79,7 @@ export function Sidebar({ onToggle }: SidebarProps) {
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-6 w-6 text-primary" />
               <span className="font-bold text-lg">SIA RSHD</span>
