@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KasKeluarForm } from "@/components/sia/KasKeluarForm";
+import { DeleteKasKeluarDialog } from "@/components/sia/DeleteKasKeluarDialog";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,9 @@ const CashOut = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [deleteItem, setDeleteItem] = useState<any>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const isMobile = useIsMobile();
 
   const { data: kasKeluarData, isLoading, refetch } = useQuery({
@@ -28,6 +33,25 @@ const CashOut = () => {
   });
 
   const handleFormSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+    refetch();
+    setEditingItem(null);
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+  };
+
+  const handleDelete = (item: any) => {
+    setDeleteItem(item);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
     refetch();
   };
@@ -170,7 +194,11 @@ const CashOut = () => {
         <div className={isMobile ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
           {/* Form Section */}
           <div className="order-1">
-            <KasKeluarForm onSuccess={handleFormSuccess} />
+            <KasKeluarForm 
+              onSuccess={handleFormSuccess} 
+              editData={editingItem}
+              onCancel={editingItem ? handleCancelEdit : undefined}
+            />
           </div>
 
           {/* Summary Section */}
@@ -347,10 +375,20 @@ const CashOut = () => {
                           </div>
                           
                           <div className="flex justify-end space-x-2 pt-2">
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(item)}
+                            >
                               <FileEdit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(item)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -439,10 +477,20 @@ const CashOut = () => {
                           </td>
                           <td className="p-4 align-middle text-sm">
                             <div className="flex items-center justify-center space-x-2">
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleEdit(item)}
+                              >
                                 <FileEdit className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(item)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -463,6 +511,13 @@ const CashOut = () => {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteKasKeluarDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        kasKeluar={deleteItem}
+        onSuccess={handleDeleteSuccess}
+      />
     </Layout>
   );
 };

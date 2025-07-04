@@ -365,6 +365,56 @@ async function handleKasKeluar(req: Request, supabase: any) {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
+    case 'PUT':
+      const updateData = await req.json();
+      const { id_kk, ...updateFields } = updateData;
+      
+      const { data: updatedKasKeluar, error: putError } = await supabase
+        .from('kaskeluar')
+        .update({
+          ...updateFields,
+          last_update: new Date().toISOString()
+        })
+        .eq('id_kk', id_kk)
+        .select()
+        .single();
+
+      if (putError) {
+        console.error('Kas keluar update error:', putError);
+        throw putError;
+      }
+
+      return new Response(
+        JSON.stringify({ data: updatedKasKeluar, message: 'Kas keluar berhasil diupdate' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    case 'DELETE':
+      const deleteUrl = new URL(req.url);
+      const kasKeluarId = deleteUrl.searchParams.get('id_kk');
+      
+      if (!kasKeluarId) {
+        return new Response(
+          JSON.stringify({ error: 'ID kas keluar diperlukan' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: deleteError } = await supabase
+        .from('kaskeluar')
+        .delete()
+        .eq('id_kk', kasKeluarId);
+
+      if (deleteError) {
+        console.error('Kas keluar delete error:', deleteError);
+        throw deleteError;
+      }
+
+      return new Response(
+        JSON.stringify({ message: 'Kas keluar berhasil dihapus' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
     default:
       return new Response(
         JSON.stringify({ error: 'Method not allowed' }),

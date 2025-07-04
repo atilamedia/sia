@@ -163,6 +163,19 @@ export class SiaApiClient {
     });
   }
 
+  async updateKasKeluar(data: KasKeluar): Promise<{ data: any; message: string }> {
+    return this.callApi('kas-keluar', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteKasKeluar(id_kk: string): Promise<{ message: string }> {
+    return this.callApi(`kas-keluar?id_kk=${id_kk}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Jurnal methods
   async getJurnal(startDate?: string, endDate?: string): Promise<{ data: any[] }> {
     const params = new URLSearchParams();

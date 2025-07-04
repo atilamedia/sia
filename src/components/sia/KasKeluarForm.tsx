@@ -11,9 +11,11 @@ import { siaApi, type MasterRekening, type KasKeluar } from "@/lib/sia-api";
 
 interface KasKeluarFormProps {
   onSuccess?: () => void;
+  editData?: any;
+  onCancel?: () => void;
 }
 
-export function KasKeluarForm({ onSuccess }: KasKeluarFormProps) {
+export function KasKeluarForm({ onSuccess, editData, onCancel }: KasKeluarFormProps) {
   const [formData, setFormData] = useState<KasKeluar>({
     tanggal: new Date().toISOString().split('T')[0],
     bagian_seksi: '',
@@ -28,10 +30,28 @@ export function KasKeluarForm({ onSuccess }: KasKeluarFormProps) {
 
   const [accounts, setAccounts] = useState<MasterRekening[]>([]);
   const [loading, setLoading] = useState(false);
+  const isEditing = !!editData;
 
   useEffect(() => {
     loadAccounts();
   }, []);
+
+  useEffect(() => {
+    if (editData) {
+      setFormData({
+        id_kk: editData.id_kk,
+        tanggal: editData.tanggal,
+        bagian_seksi: editData.bagian_seksi || '',
+        kode_rek: editData.kode_rek || '',
+        total: editData.total || 0,
+        keterangan: editData.keterangan || '',
+        penerima: editData.penerima || '',
+        no_cek: editData.no_cek || '',
+        usernya: editData.usernya || 'admin',
+        id_div: editData.id_div || '01'
+      });
+    }
+  }, [editData]);
 
   const loadAccounts = async () => {
     try {
@@ -48,26 +68,33 @@ export function KasKeluarForm({ onSuccess }: KasKeluarFormProps) {
     setLoading(true);
 
     try {
-      const response = await siaApi.createKasKeluar(formData);
-      toast.success(response.message);
+      if (isEditing) {
+        const response = await siaApi.updateKasKeluar(formData);
+        toast.success(response.message);
+      } else {
+        const response = await siaApi.createKasKeluar(formData);
+        toast.success(response.message);
+      }
       
-      // Reset form
-      setFormData({
-        tanggal: new Date().toISOString().split('T')[0],
-        bagian_seksi: '',
-        kode_rek: '',
-        total: 0,
-        keterangan: '',
-        penerima: '',
-        no_cek: '',
-        usernya: 'admin',
-        id_div: '01'
-      });
+      // Reset form if not editing
+      if (!isEditing) {
+        setFormData({
+          tanggal: new Date().toISOString().split('T')[0],
+          bagian_seksi: '',
+          kode_rek: '',
+          total: 0,
+          keterangan: '',
+          penerima: '',
+          no_cek: '',
+          usernya: 'admin',
+          id_div: '01'
+        });
+      }
 
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error('Error creating kas keluar:', error);
-      toast.error('Gagal menyimpan kas keluar');
+      console.error('Error saving kas keluar:', error);
+      toast.error(`Gagal ${isEditing ? 'mengupdate' : 'menyimpan'} kas keluar`);
     } finally {
       setLoading(false);
     }
@@ -83,7 +110,7 @@ export function KasKeluarForm({ onSuccess }: KasKeluarFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Form Kas Keluar</CardTitle>
+        <CardTitle>{isEditing ? 'Edit Kas Keluar' : 'Form Kas Keluar'}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -168,9 +195,16 @@ export function KasKeluarForm({ onSuccess }: KasKeluarFormProps) {
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Menyimpan...' : 'Simpan Kas Keluar'}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading} className="flex-1">
+              {loading ? `${isEditing ? 'Mengupdate...' : 'Menyimpan...'}` : `${isEditing ? 'Update Kas Keluar' : 'Simpan Kas Keluar'}`}
+            </Button>
+            {isEditing && onCancel && (
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Batal
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>
