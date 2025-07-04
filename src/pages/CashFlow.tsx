@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,11 +12,9 @@ import { format } from "date-fns";
 import { Download, Filter, FileSpreadsheet, FileText } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import * as XLSX from 'xlsx';
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const CashFlow = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
-  const isMobile = useIsMobile();
 
   const { data: kasMasukData, isLoading: loadingKasMasuk } = useQuery({
     queryKey: ['kas-masuk', date?.from, date?.to],
@@ -207,78 +206,70 @@ const CashFlow = () => {
 
   return (
     <Layout title="Arus Kas">
-      <div className="space-y-4 md:space-y-6 p-2 md:p-0">
+      <div className="space-y-6">
         {/* Header with filters */}
-        <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between">
-          <h1 className="text-xl md:text-2xl font-bold">Laporan Arus Kas</h1>
-          <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:space-x-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h1 className="text-2xl font-bold">Laporan Arus Kas</h1>
+          <div className="flex items-center gap-2">
             <DateRangePicker 
               dateRange={date} 
               onDateRangeChange={setDate}
             />
-            <div className="flex space-x-2">
-              <Button onClick={exportToExcel} variant="outline" size={isMobile ? "sm" : "default"}>
-                <FileSpreadsheet className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                {!isMobile && "Excel"}
-              </Button>
-              <Button onClick={exportToPDF} variant="outline" size={isMobile ? "sm" : "default"}>
-                <FileText className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                {!isMobile && "PDF"}
-              </Button>
-            </div>
+            <Button onClick={exportToExcel} variant="outline">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Excel
+            </Button>
+            <Button onClick={exportToPDF} variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
+            </Button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base md:text-lg text-green-600">Total Kas Masuk</CardTitle>
+            <CardHeader>
+              <CardTitle className="text-lg text-green-600">Total Kas Masuk</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-green-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
-                  notation: isMobile ? 'compact' : 'standard',
-                  compactDisplay: 'short'
                 }).format(totalKasMasuk)}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base md:text-lg text-red-600">Total Kas Keluar</CardTitle>
+            <CardHeader>
+              <CardTitle className="text-lg text-red-600">Total Kas Keluar</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-lg md:text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-red-600">
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
-                  notation: isMobile ? 'compact' : 'standard',
-                  compactDisplay: 'short'
                 }).format(totalKasKeluar)}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className={`text-base md:text-lg ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <CardHeader>
+              <CardTitle className={`text-lg ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 Net Cash Flow
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-lg md:text-2xl font-bold ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {new Intl.NumberFormat('id-ID', {
                   style: 'currency',
                   currency: 'IDR',
                   minimumFractionDigits: 0,
-                  notation: isMobile ? 'compact' : 'standard',
-                  compactDisplay: 'short'
                 }).format(netCashFlow)}
               </div>
             </CardContent>
@@ -286,27 +277,18 @@ const CashFlow = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base md:text-lg">Perbandingan Arus Kas</CardTitle>
+            <CardHeader>
+              <CardTitle>Perbandingan Arus Kas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[250px] md:h-[300px]">
+              <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={cashFlowData.slice(0, 2)}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="name" 
-                      fontSize={isMobile ? 10 : 12}
-                      interval={0}
-                      angle={isMobile ? -45 : 0}
-                      textAnchor={isMobile ? "end" : "middle"}
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => `${(value/1000000).toFixed(1)}jt`}
-                      fontSize={isMobile ? 10 : 12}
-                    />
+                    <XAxis dataKey="name" />
+                    <YAxis tickFormatter={(value) => `${(value/1000000).toFixed(1)}jt`} />
                     <Tooltip 
                       formatter={(value: number) => new Intl.NumberFormat('id-ID', {
                         style: 'currency',
@@ -322,27 +304,25 @@ const CashFlow = () => {
           </Card>
 
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base md:text-lg">Trend Arus Kas</CardTitle>
+            <CardHeader>
+              <CardTitle>Trend Arus Kas</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 md:space-y-4">
+              <div className="space-y-4">
                 {cashFlowData.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
-                    <div className="flex items-center space-x-2 md:space-x-3">
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
                       <div 
-                        className="w-3 h-3 md:w-4 md:h-4 rounded-full" 
+                        className="w-4 h-4 rounded-full" 
                         style={{ backgroundColor: item.color }}
                       ></div>
-                      <span className="font-medium text-sm md:text-base">{item.name}</span>
+                      <span className="font-medium">{item.name}</span>
                     </div>
-                    <span className={`font-bold text-sm md:text-base ${item.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-bold ${item.value >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {new Intl.NumberFormat('id-ID', {
                         style: 'currency',
                         currency: 'IDR',
                         minimumFractionDigits: 0,
-                        notation: isMobile ? 'compact' : 'standard',
-                        compactDisplay: 'short'
                       }).format(Math.abs(item.value))}
                     </span>
                   </div>
@@ -353,174 +333,104 @@ const CashFlow = () => {
         </div>
 
         {/* Detailed Tables */}
-        <Tabs defaultValue="masuk" className="space-y-4 md:space-y-6">
+        <Tabs defaultValue="masuk" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="masuk" className="text-sm md:text-base">Kas Masuk</TabsTrigger>
-            <TabsTrigger value="keluar" className="text-sm md:text-base">Kas Keluar</TabsTrigger>
+            <TabsTrigger value="masuk">Kas Masuk</TabsTrigger>
+            <TabsTrigger value="keluar">Kas Keluar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="masuk">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base md:text-lg">Detail Kas Masuk</CardTitle>
+              <CardHeader>
+                <CardTitle>Detail Kas Masuk</CardTitle>
               </CardHeader>
-              <CardContent className="p-0 md:p-6">
-                {isMobile ? (
-                  /* Mobile Card View */
-                  <div className="divide-y">
-                    {loadingKasMasuk ? (
-                      <div className="p-4 text-center text-muted-foreground">Loading...</div>
-                    ) : kasMasukData?.data?.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">Tidak ada data</div>
-                    ) : (
-                      kasMasukData?.data?.map((item, index) => (
-                        <div key={index} className="p-4 hover:bg-muted/30 transition-colors">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground">{item.tanggal}</div>
-                              <div className="text-sm font-medium">{item.pembayar}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-green-600 text-sm">
-                                {new Intl.NumberFormat('id-ID', {
-                                  style: 'currency',
-                                  currency: 'IDR',
-                                  minimumFractionDigits: 0,
-                                  notation: 'compact',
-                                  compactDisplay: 'short'
-                                }).format(item.total)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-sm">{item.keterangan}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                ) : (
-                  /* Desktop Table View */
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Tanggal</th>
-                          <th className="text-left p-2">Keterangan</th>
-                          <th className="text-left p-2">Pembayar</th>
-                          <th className="text-right p-2">Jumlah</th>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Tanggal</th>
+                        <th className="text-left p-2">Keterangan</th>
+                        <th className="text-left p-2">Pembayar</th>
+                        <th className="text-right p-2">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingKasMasuk ? (
+                        <tr>
+                          <td colSpan={4} className="text-center p-4">Loading...</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {loadingKasMasuk ? (
-                          <tr>
-                            <td colSpan={4} className="text-center p-4">Loading...</td>
+                      ) : kasMasukData?.data?.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="text-center p-4">Tidak ada data</td>
+                        </tr>
+                      ) : (
+                        kasMasukData?.data?.map((item, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{item.tanggal}</td>
+                            <td className="p-2">{item.keterangan}</td>
+                            <td className="p-2">{item.pembayar}</td>
+                            <td className="p-2 text-right font-medium text-green-600">
+                              {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(item.total)}
+                            </td>
                           </tr>
-                        ) : kasMasukData?.data?.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="text-center p-4">Tidak ada data</td>
-                          </tr>
-                        ) : (
-                          kasMasukData?.data?.map((item, index) => (
-                            <tr key={index} className="border-b hover:bg-gray-50">
-                              <td className="p-2">{item.tanggal}</td>
-                              <td className="p-2">{item.keterangan}</td>
-                              <td className="p-2">{item.pembayar}</td>
-                              <td className="p-2 text-right font-medium text-green-600">
-                                {new Intl.NumberFormat('id-ID', {
-                                  style: 'currency',
-                                  currency: 'IDR',
-                                  minimumFractionDigits: 0,
-                                }).format(item.total)}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="keluar">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base md:text-lg">Detail Kas Keluar</CardTitle>
+              <CardHeader>
+                <CardTitle>Detail Kas Keluar</CardTitle>
               </CardHeader>
-              <CardContent className="p-0 md:p-6">
-                {isMobile ? (
-                  /* Mobile Card View */
-                  <div className="divide-y">
-                    {loadingKasKeluar ? (
-                      <div className="p-4 text-center text-muted-foreground">Loading...</div>
-                    ) : kasKeluarData?.data?.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">Tidak ada data</div>
-                    ) : (
-                      kasKeluarData?.data?.map((item, index) => (
-                        <div key={index} className="p-4 hover:bg-muted/30 transition-colors">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground">{item.tanggal}</div>
-                              <div className="text-sm font-medium">{item.penerima}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-red-600 text-sm">
-                                {new Intl.NumberFormat('id-ID', {
-                                  style: 'currency',
-                                  currency: 'IDR',
-                                  minimumFractionDigits: 0,
-                                  notation: 'compact',
-                                  compactDisplay: 'short'
-                                }).format(item.total)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-sm">{item.keterangan}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                ) : (
-                  /* Desktop Table View */
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="text-left p-2">Tanggal</th>
-                          <th className="text-left p-2">Keterangan</th>
-                          <th className="text-left p-2">Penerima</th>
-                          <th className="text-right p-2">Jumlah</th>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Tanggal</th>
+                        <th className="text-left p-2">Keterangan</th>
+                        <th className="text-left p-2">Penerima</th>
+                        <th className="text-right p-2">Jumlah</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingKasKeluar ? (
+                        <tr>
+                          <td colSpan={4} className="text-center p-4">Loading...</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {loadingKasKeluar ? (
-                          <tr>
-                            <td colSpan={4} className="text-center p-4">Loading...</td>
+                      ) : kasKeluarData?.data?.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="text-center p-4">Tidak ada data</td>
+                        </tr>
+                      ) : (
+                        kasKeluarData?.data?.map((item, index) => (
+                          <tr key={index} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{item.tanggal}</td>
+                            <td className="p-2">{item.keterangan}</td>
+                            <td className="p-2">{item.penerima}</td>
+                            <td className="p-2 text-right font-medium text-red-600">
+                              {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(item.total)}
+                            </td>
                           </tr>
-                        ) : kasKeluarData?.data?.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="text-center p-4">Tidak ada data</td>
-                          </tr>
-                        ) : (
-                          kasKeluarData?.data?.map((item, index) => (
-                            <tr key={index} className="border-b hover:bg-gray-50">
-                              <td className="p-2">{item.tanggal}</td>
-                              <td className="p-2">{item.keterangan}</td>
-                              <td className="p-2">{item.penerima}</td>
-                              <td className="p-2 text-right font-medium text-red-600">
-                                {new Intl.NumberFormat('id-ID', {
-                                  style: 'currency',
-                                  currency: 'IDR',
-                                  minimumFractionDigits: 0,
-                                }).format(item.total)}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,85 +1,124 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileEdit, Trash2 } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { JournalEntry } from "@/lib/types";
+import { BookText, Pencil, Trash } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface JournalEntriesCardProps {
-  data: any[];
-  isLoading: boolean;
+  code: string;
+  entries: JournalEntry[];
+  onEdit: (entries: JournalEntry[]) => void;
+  onDelete: (code: string) => void;
 }
 
-export function JournalEntriesCard({ data, isLoading }: JournalEntriesCardProps) {
-  if (isLoading) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">Loading...</div>
-    );
-  }
+export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalEntriesCardProps) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  const firstEntry = entries[0];
+  
+  // Calculate totals
+  const totalDebit = entries.reduce((sum, entry) => sum + entry.debit, 0);
+  const totalCredit = entries.reduce((sum, entry) => sum + entry.credit, 0);
 
-  if (!data || data.length === 0) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        Tidak ada data jurnal yang ditemukan
-      </div>
-    );
-  }
-
+  const handleDelete = () => {
+    onDelete(code);
+    setIsDeleteDialogOpen(false);
+  };
+  
   return (
-    <div className="space-y-4">
-      {data.map((item) => (
-        <Card key={item.id_ju}>
-          <CardContent className="p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-semibold">{item.id_ju}</h3>
-                <p className="text-sm text-muted-foreground">{item.tanggal}</p>
-                <p className="text-sm text-muted-foreground">{item.jurnal_jenis?.nm_jj}</p>
-              </div>
-              <div className="flex space-x-2">
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                  <FileEdit className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+    <>
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/50 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookText className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg">{code}</CardTitle>
             </div>
-            
-            <div className="space-y-2">
-              {item.jurnal?.map((entry: any, idx: number) => (
-                <div key={idx} className="p-2 bg-muted/50 rounded text-sm">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{entry.kode_rek}</div>
-                      <div className="text-muted-foreground">{entry.m_rekening?.nama_rek}</div>
-                      <div className="text-muted-foreground">{entry.deskripsi}</div>
-                    </div>
-                    <div className="text-right">
-                      {entry.debit > 0 && (
-                        <div className="text-green-600 font-medium">
-                          D: {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                            minimumFractionDigits: 0
-                          }).format(entry.debit)}
-                        </div>
-                      )}
-                      {entry.kredit > 0 && (
-                        <div className="text-red-600 font-medium">
-                          K: {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                            minimumFractionDigits: 0
-                          }).format(entry.kredit)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-end text-sm">
+              <span>{formatDate(firstEntry.date)}</span>
+              <span className="text-muted-foreground">Oleh: {firstEntry.user}</span>
             </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/30">
+                  <th className="h-10 px-4 text-left font-medium">Kode Akun</th>
+                  <th className="h-10 px-4 text-left font-medium">Deskripsi</th>
+                  <th className="h-10 px-4 text-right font-medium">Debit</th>
+                  <th className="h-10 px-4 text-right font-medium">Kredit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry, index) => (
+                  <tr key={`${entry.code}-${entry.accountCode}-${index}`} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-4 font-medium">{entry.accountCode}</td>
+                    <td className="p-4">{entry.description}</td>
+                    <td className="p-4 text-right">
+                      {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                    </td>
+                    <td className="p-4 text-right">
+                      {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-muted/20 font-medium">
+                  <td colSpan={2} className="p-4 text-right">Total</td>
+                  <td className="p-4 text-right">{formatCurrency(totalDebit)}</td>
+                  <td className="p-4 text-right">{formatCurrency(totalCredit)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end p-4 border-t">
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => onEdit(entries)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                Hapus
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jurnal {code}? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

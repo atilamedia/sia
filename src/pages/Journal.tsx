@@ -1,25 +1,38 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { JurnalForm } from "@/components/sia/JurnalForm";
-import { JournalEntriesCard } from "@/components/journal/JournalEntriesCard";
-import { JournalTypesTable } from "@/components/journal/JournalTypesTable";
+import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
+import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
-import { Search, FileSpreadsheet, FileText, FileEdit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, Download, FileEdit, Trash2, BookOpen, FileSpreadsheet, FileText } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const Journal = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const isMobile = useIsMobile();
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [editingJurnal, setEditingJurnal] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingJurnalId, setDeletingJurnalId] = useState<string>("");
+  const { toast } = useToast();
 
   const { data: jurnalData, isLoading, refetch } = useQuery({
     queryKey: ['jurnal', date?.from, date?.to, refreshTrigger],
@@ -34,19 +47,97 @@ const Journal = () => {
     refetch();
   };
 
+  const handleEdit = (jurnal: any) => {
+    console.log('Editing jurnal:', jurnal);
+    setEditingJurnal(jurnal);
+    setIsEditFormOpen(true);
+  };
+
+  const handleDelete = (id_ju: string) => {
+    setDeletingJurnalId(id_ju);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await siaApi.deleteJurnal(deletingJurnalId);
+      toast({
+        title: "Berhasil",
+        description: "Jurnal berhasil dihapus",
+      });
+      handleFormSuccess();
+    } catch (error) {
+      console.error('Delete jurnal error:', error);
+      toast({
+        title: "Error",
+        description: "Gagal menghapus jurnal",
+        variant: "destructive",
+      });
+    }
+    setIsDeleteDialogOpen(false);
+    setDeletingJurnalId("");
+  };
+
+  const handleEditSave = async (entries: any[]) => {
+    try {
+      if (!editingJurnal) return;
+      
+      const updateData = {
+        tanggal: editingJurnal.tanggal,
+        usernya: editingJurnal.usernya,
+        id_div: editingJurnal.id_div,
+        id_jj: editingJurnal.id_jj,
+        entries: entries.map(entry => ({
+          kode_rek: entry.accountCode,
+          deskripsi: entry.description,
+          debit: entry.debit,
+          kredit: entry.credit
+        }))
+      };
+
+      await siaApi.updateJurnal(editingJurnal.id_ju, updateData);
+      toast({
+        title: "Berhasil",
+        description: "Jurnal berhasil diupdate",
+      });
+      setIsEditFormOpen(false);
+      setEditingJurnal(null);
+      handleFormSuccess();
+    } catch (error) {
+      console.error('Update jurnal error:', error);
+      toast({
+        title: "Error",
+        description: "Gagal mengupdate jurnal",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredData = jurnalData?.data?.filter(item => 
     item.id_ju?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.jurnal_jenis?.nm_jj?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  const totalEntries = filteredData.reduce((sum, item) => sum + (item.jurnal?.length || 0), 0);
+  const totalDebit = filteredData.reduce((sum, item) => 
+    sum + (item.jurnal?.reduce((debitSum, entry) => debitSum + (entry.debit || 0), 0) || 0), 0
+  );
+  const totalKredit = filteredData.reduce((sum, item) => 
+    sum + (item.jurnal?.reduce((kreditSum, entry) => kreditSum + (entry.kredit || 0), 0) || 0), 0
+  );
 
   const exportToExcel = () => {
     const workbook = XLSX.utils.book_new();
     
     // Summary sheet
     const summaryData = [
-      ['Laporan Jurnal'],
+      ['Laporan Jurnal Umum'],
       [''],
-      ['Total Transaksi Jurnal', filteredData.length],
+      ['Total Jurnal', filteredData.length],
+      ['Total Entries', totalEntries],
+      ['Total Debit', totalDebit],
+      ['Total Kredit', totalKredit],
+      ['Status', totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'],
       [''],
       ['Periode:', date?.from && date?.to ? `${format(date.from, 'dd/MM/yyyy')} - ${format(date.to, 'dd/MM/yyyy')}` : 'Semua']
     ];
@@ -56,28 +147,21 @@ const Journal = () => {
 
     // Detail sheet
     if (filteredData.length > 0) {
-      const detailData = [];
-      filteredData.forEach(item => {
-        if (item.jurnal && item.jurnal.length > 0) {
-          item.jurnal.forEach(entry => {
-            detailData.push({
-              'ID Jurnal': item.id_ju,
-              'Tanggal': item.tanggal,
-              'Jenis Jurnal': item.jurnal_jenis?.nm_jj,
-              'Kode Rekening': entry.kode_rek,
-              'Nama Rekening': entry.m_rekening?.nama_rek,
-              'Deskripsi': entry.deskripsi,
-              'Debit': entry.debit || 0,
-              'Kredit': entry.kredit || 0
-            });
-          });
-        }
-      });
+      const detailData = filteredData.flatMap(jurnal => 
+        jurnal.jurnal?.map(entry => ({
+          'ID Jurnal': jurnal.id_ju,
+          'Tanggal': jurnal.tanggal,
+          'Jenis': jurnal.jurnal_jenis?.nm_jj,
+          'Kode Rekening': entry.kode_rek,
+          'Nama Rekening': entry.m_rekening?.nama_rek,
+          'Deskripsi': entry.deskripsi,
+          'Debit': entry.debit,
+          'Kredit': entry.kredit
+        })) || []
+      );
       
-      if (detailData.length > 0) {
-        const detailSheet = XLSX.utils.json_to_sheet(detailData);
-        XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Jurnal');
-      }
+      const detailSheet = XLSX.utils.json_to_sheet(detailData);
+      XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Jurnal');
     }
 
     const fileName = `jurnal-${Date.now()}.xlsx`;
@@ -96,64 +180,88 @@ const Journal = () => {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Laporan Jurnal</title>
+        <title>Laporan Jurnal Umum</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           .header { text-align: center; margin-bottom: 30px; }
           .summary { margin-bottom: 30px; }
           .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-          .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .jurnal-item { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; }
+          .jurnal-header { background-color: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; }
+          .table { width: 100%; border-collapse: collapse; }
           .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .table th { background-color: #f5f5f5; }
-          .debit { color: #10B981; }
-          .kredit { color: #EF4444; }
+          .table th { background-color: #f9f9f9; }
+          .debit { color: #3B82F6; }
+          .credit { color: #10B981; }
+          .balanced { color: #10B981; }
+          .unbalanced { color: #EF4444; }
           @media print { body { margin: 0; } }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>Laporan Jurnal</h1>
+          <h1>Laporan Jurnal Umum</h1>
           <p>Periode: ${dateRange}</p>
         </div>
         
         <div class="summary">
           <h2>Ringkasan</h2>
           <div class="summary-item">
-            <span>Total Transaksi Jurnal:</span>
+            <span>Total Jurnal:</span>
             <span><strong>${filteredData.length}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Entries:</span>
+            <span><strong>${totalEntries}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Debit:</span>
+            <span class="debit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalDebit)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Total Kredit:</span>
+            <span class="credit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalKredit)}</strong></span>
+          </div>
+          <div class="summary-item">
+            <span>Status:</span>
+            <span class="${totalDebit === totalKredit ? 'balanced' : 'unbalanced'}"><strong>${totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}</strong></span>
           </div>
         </div>
 
         <div>
           <h2>Detail Jurnal</h2>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Tanggal</th>
-                <th>Jenis</th>
-                <th>Rekening</th>
-                <th>Deskripsi</th>
-                <th>Debit</th>
-                <th>Kredit</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredData.map(item => 
-                item.jurnal?.map(entry => `
+          ${filteredData.map(jurnal => `
+            <div class="jurnal-item">
+              <div class="jurnal-header">
+                <strong>${jurnal.id_ju}</strong> - ${jurnal.tanggal} - ${jurnal.jurnal_jenis?.nm_jj}
+              </div>
+              <table class="table">
+                <thead>
                   <tr>
-                    <td>${item.id_ju}</td>
-                    <td>${item.tanggal}</td>
-                    <td>${item.jurnal_jenis?.nm_jj || ''}</td>
-                    <td>${entry.kode_rek}<br><small>${entry.m_rekening?.nama_rek || ''}</small></td>
-                    <td>${entry.deskripsi}</td>
-                    <td class="debit">${entry.debit ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
-                    <td class="kredit">${entry.kredit ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
+                    <th>Rekening</th>
+                    <th>Deskripsi</th>
+                    <th>Debit</th>
+                    <th>Kredit</th>
                   </tr>
-                `).join('') || ''
-              ).join('')}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  ${jurnal.jurnal?.map(entry => `
+                    <tr>
+                      <td>${entry.kode_rek}<br><small>${entry.m_rekening?.nama_rek || ''}</small></td>
+                      <td>${entry.deskripsi}</td>
+                      <td class="debit">${entry.debit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
+                      <td class="credit">${entry.kredit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
+                    </tr>
+                  `).join('') || ''}
+                  <tr style="border-top: 2px solid #333; font-weight: bold;">
+                    <td colspan="2">Total:</td>
+                    <td class="debit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}</td>
+                    <td class="credit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
         </div>
       </body>
       </html>
@@ -170,158 +278,261 @@ const Journal = () => {
 
   return (
     <Layout title="Jurnal">
-      <div className="space-y-4 md:space-y-6 p-2 md:p-0">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Form Section */}
-          <div className="order-2 xl:order-1">
+          <div>
             <JurnalForm onSuccess={handleFormSuccess} />
           </div>
 
-          {/* Info Section */}
-          <div className="space-y-4 md:space-y-6 order-1 xl:order-2">
+          {/* Summary Section */}
+          <div className="space-y-6">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg md:text-xl">Ringkasan Jurnal</CardTitle>
+              <CardHeader>
+                <CardTitle>Ringkasan Jurnal</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm md:text-base">Total Jurnal:</span>
-                  <span className="font-bold text-sm md:text-base">{filteredData.length}</span>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span>Total Jurnal:</span>
+                    <span className="font-bold">{filteredData.length}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Entries:</span>
+                    <span className="font-bold">{totalEntries}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Debit:</span>
+                    <span className="font-bold text-blue-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalDebit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Total Kredit:</span>
+                    <span className="font-bold text-green-600">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(totalKredit)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-t pt-2">
+                    <span>Balance:</span>
+                    <span className={`font-bold ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
+                      {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg md:text-xl">Informasi</CardTitle>
+              <CardHeader>
+                <CardTitle>Informasi</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xs md:text-sm text-gray-600 space-y-2">
-                  <p>• Jurnal umum digunakan untuk mencatat transaksi yang tidak termasuk dalam jurnal khusus</p>
-                  <p>• Setiap entry jurnal harus balance (total debit = total kredit)</p>
+                <div className="text-sm text-gray-600 space-y-2">
+                  <p>• Form digunakan untuk mencatat transaksi akuntansi dengan metode double entry</p>
+                  <p>• Total debit harus sama dengan total kredit (balance)</p>
                   <p>• ID jurnal di-generate otomatis dengan format JU+YYYYMMDD+NNN</p>
-                  <p>• Setiap jurnal harus memiliki minimal 2 entry (debit dan kredit)</p>
+                  <p>• Setiap entry harus memiliki deskripsi yang jelas untuk keperluan audit</p>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Journal Types Table */}
-        <JournalTypesTable />
-
-        {/* Journal Entries */}
+        {/* Data Table Section */}
         <Card>
-          <CardHeader className="pb-3">
-            <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between">
-              <CardTitle className="text-lg md:text-xl">Daftar Jurnal</CardTitle>
-              <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:space-x-2">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <CardTitle>Daftar Jurnal Umum</CardTitle>
+              <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Cari jurnal..."
-                    className="pl-9 text-sm"
+                    className="pl-9"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <div className="flex space-x-2">
-                  <DateRangePicker 
-                    dateRange={date} 
-                    onDateRangeChange={setDate}
-                  />
-                  <Button onClick={exportToExcel} variant="outline" size={isMobile ? "sm" : "default"}>
-                    <FileSpreadsheet className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                    {!isMobile && "Excel"}
-                  </Button>
-                  <Button onClick={exportToPDF} variant="outline" size={isMobile ? "sm" : "default"}>
-                    <FileText className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
-                    {!isMobile && "PDF"}
-                  </Button>
-                </div>
+                <DateRangePicker 
+                  dateRange={date} 
+                  onDateRangeChange={setDate}
+                />
+                <Button onClick={exportToExcel} variant="outline">
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Excel
+                </Button>
+                <Button onClick={exportToPDF} variant="outline">
+                  <FileText className="mr-2 h-4 w-4" />
+                  PDF
+                </Button>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0 md:p-6">
-            {/* Mobile Card View */}
-            {isMobile ? (
-              <div className="divide-y">
-                {isLoading ? (
-                  <div className="p-4 text-center text-muted-foreground">Loading...</div>
-                ) : filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <div key={item.id_ju} className="p-4 hover:bg-muted/30 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="space-y-1">
-                          <div className="font-medium text-sm">{item.id_ju}</div>
-                          <div className="text-xs text-muted-foreground">{item.tanggal}</div>
+          <CardContent>
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Loading...
+                </div>
+              ) : filteredData.length > 0 ? (
+                filteredData.map((jurnal) => (
+                  <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <BookOpen className="h-4 w-4 text-blue-500" />
+                          <span className="font-medium">{jurnal.id_ju}</span>
+                          <span className="text-sm text-muted-foreground">
+                            - {jurnal.tanggal}
+                          </span>
+                          <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                            {jurnal.jurnal_jenis?.nm_jj}
+                          </span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {item.jurnal_jenis?.nm_jj}
+                        <div className="flex items-center space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEdit(jurnal)}
+                          >
+                            <FileEdit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(jurnal.id_ju)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        {item.jurnal?.map((entry, idx) => (
-                          <div key={idx} className="text-xs p-2 bg-muted/50 rounded">
-                            <div className="font-medium">{entry.kode_rek}</div>
-                            <div className="text-muted-foreground">{entry.m_rekening?.nama_rek}</div>
-                            <div className="flex justify-between mt-1">
-                              <span>{entry.deskripsi}</span>
-                              <div className="space-x-2">
-                                {entry.debit ? (
-                                  <span className="text-green-600 font-medium">
-                                    D: {new Intl.NumberFormat('id-ID', {
-                                      style: 'currency',
-                                      currency: 'IDR',
-                                      minimumFractionDigits: 0,
-                                      notation: 'compact',
-                                      compactDisplay: 'short'
-                                    }).format(entry.debit)}
-                                  </span>
-                                ) : null}
-                                {entry.kredit ? (
-                                  <span className="text-red-600 font-medium">
-                                    K: {new Intl.NumberFormat('id-ID', {
-                                      style: 'currency',
-                                      currency: 'IDR',
-                                      minimumFractionDigits: 0,
-                                      notation: 'compact',
-                                      compactDisplay: 'short'
-                                    }).format(entry.kredit)}
-                                  </span>
-                                ) : null}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2 font-medium">Rekening</th>
+                              <th className="text-left p-2 font-medium">Deskripsi</th>
+                              <th className="text-right p-2 font-medium">Debit</th>
+                              <th className="text-right p-2 font-medium">Kredit</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {jurnal.jurnal?.map((entry, index) => (
+                              <tr key={index} className="border-b last:border-b-0">
+                                <td className="p-2">
+                                  <div className="font-medium">{entry.kode_rek}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {entry.m_rekening?.nama_rek}
+                                  </div>
+                                </td>
+                                <td className="p-2">{entry.deskripsi}</td>
+                                <td className="p-2 text-right font-medium text-blue-600">
+                                  {entry.debit > 0 ? new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    minimumFractionDigits: 0,
+                                  }).format(entry.debit) : '-'}
+                                </td>
+                                <td className="p-2 text-right font-medium text-green-600">
+                                  {entry.kredit > 0 ? new Intl.NumberFormat('id-ID', {
+                                    style: 'currency',
+                                    currency: 'IDR',
+                                    minimumFractionDigits: 0,
+                                  }).format(entry.kredit) : '-'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="flex justify-end space-x-2 mt-3 pt-2 border-t">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <FileEdit className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
+                        <span>Total:</span>
+                        <div className="flex space-x-4">
+                          <span className="text-blue-600">
+                            Debit: {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0,
+                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                          </span>
+                          <span className="text-green-600">
+                            Kredit: {new Intl.NumberFormat('id-ID', {
+                              style: 'currency',
+                              currency: 'IDR',
+                              minimumFractionDigits: 0,
+                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    Tidak ada data jurnal yang ditemukan
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Desktop View - use existing JournalEntriesCard */
-              <JournalEntriesCard 
-                data={filteredData}
-                isLoading={isLoading}
-              />
-            )}
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  Tidak ada data jurnal yang ditemukan
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Form Dialog */}
+      <JournalEntryForm
+        isOpen={isEditFormOpen}
+        onClose={() => {
+          setIsEditFormOpen(false);
+          setEditingJurnal(null);
+        }}
+        onSave={handleEditSave}
+        journalTypes={[{ id: 'JU', name: 'Jurnal Umum', isDefault: true }]}
+        initialEntries={editingJurnal?.jurnal?.map((entry: any) => ({
+          code: editingJurnal.id_ju,
+          date: editingJurnal.tanggal,
+          accountCode: entry.kode_rek,
+          description: entry.deskripsi,
+          debit: entry.debit,
+          credit: entry.kredit,
+          user: editingJurnal.usernya,
+          createdAt: editingJurnal.at_create
+        }))}
+        isEditing={true}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jurnal {deletingJurnalId}? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

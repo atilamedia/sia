@@ -2,6 +2,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { Account } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,78 +14,48 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { siaApi } from "@/lib/sia-api";
-import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 
 const accountSchema = z.object({
-  kode_rek: z.string().min(1, "Kode rekening diperlukan"),
-  nama_rek: z.string().min(1, "Nama rekening diperlukan"),
+  code: z.string().min(1, "Kode rekening diperlukan"),
+  name: z.string().min(1, "Nama rekening diperlukan"),
   level: z.coerce.number().int().positive(),
-  k_level: z.enum(["Induk", "Detail Kas", "Detail Bk", "Detail", "Sendiri"]),
-  rek_induk: z.string().default(""),
-  id_div: z.string().default("01"),
-  jenis_rek: z.enum(["NERACA", "LRA", "LO"]),
-  saldo: z.coerce.number().default(0),
+  levelType: z.enum(["Induk", "Detail Kas", "Detail Bk", "Detail", "Sendiri"]),
+  parentCode: z.string().optional(),
+  division: z.string().default("01"),
+  accountType: z.enum(["NERACA", "LRA", "LO"]),
+  balance: z.coerce.number().default(0),
 });
 
 export type AccountFormValues = z.infer<typeof accountSchema>;
 
 interface AccountFormProps {
-  onSuccess: () => void;
-  editData?: any;
+  account?: Account;
+  parentAccounts: Account[];
+  onSubmit: (data: AccountFormValues) => void;
+  onCancel: () => void;
 }
 
-export function AccountForm({ onSuccess, editData }: AccountFormProps) {
-  const isEditMode = !!editData;
-
-  const { data: parentAccountsData } = useQuery({
-    queryKey: ['master-rekening-parent'],
-    queryFn: () => siaApi.getMasterRekening(),
-  });
-
-  const parentAccounts = parentAccountsData?.data?.filter(acc => acc.k_level === 'Induk') || [];
+export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: AccountFormProps) {
+  const { toast } = useToast();
+  const isEditMode = !!account;
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
-    defaultValues: editData || {
-      kode_rek: "",
-      nama_rek: "",
+    defaultValues: account || {
+      code: "",
+      name: "",
       level: 1,
-      k_level: "Detail",
-      rek_induk: "",
-      id_div: "01",
-      jenis_rek: "NERACA",
-      saldo: 0,
+      levelType: "Detail",
+      parentCode: "",
+      division: "01",
+      accountType: "NERACA",
+      balance: 0,
     },
   });
 
-  async function handleSubmit(data: AccountFormValues) {
-    try {
-      // Ensure all required fields are present
-      const submitData = {
-        kode_rek: data.kode_rek,
-        nama_rek: data.nama_rek,
-        level: data.level,
-        k_level: data.k_level,
-        rek_induk: data.rek_induk || "",
-        id_div: data.id_div,
-        jenis_rek: data.jenis_rek,
-        saldo: data.saldo,
-      };
-
-      if (isEditMode) {
-        await siaApi.updateMasterRekening(editData.kode_rek, submitData);
-        toast.success("Rekening berhasil diperbarui");
-      } else {
-        await siaApi.createMasterRekening(submitData);
-        toast.success("Rekening berhasil ditambahkan");
-      }
-      onSuccess();
-    } catch (error) {
-      console.error('Error saving account:', error);
-      toast.error("Gagal menyimpan rekening");
-    }
+  function handleSubmit(data: AccountFormValues) {
+    onSubmit(data);
   }
 
   return (
@@ -93,7 +64,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="kode_rek"
+            name="code"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Kode Rekening</FormLabel>
@@ -110,7 +81,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
           />
           <FormField
             control={form.control}
-            name="nama_rek"
+            name="name"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Nama Rekening</FormLabel>
@@ -139,7 +110,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
           />
           <FormField
             control={form.control}
-            name="k_level"
+            name="levelType"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Jenis Level</FormLabel>
@@ -169,7 +140,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="rek_induk"
+            name="parentCode"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Rekening Induk</FormLabel>
@@ -183,10 +154,10 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">-</SelectItem>
+                    <SelectItem value="-">-</SelectItem>
                     {parentAccounts.map(parent => (
-                      <SelectItem key={parent.kode_rek} value={parent.kode_rek}>
-                        {parent.kode_rek} - {parent.nama_rek}
+                      <SelectItem key={parent.code} value={parent.code}>
+                        {parent.code} - {parent.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -197,7 +168,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
           />
           <FormField
             control={form.control}
-            name="jenis_rek"
+            name="accountType"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipe Rekening</FormLabel>
@@ -225,7 +196,7 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
         {isEditMode && (
           <FormField
             control={form.control}
-            name="saldo"
+            name="balance"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Saldo</FormLabel>
@@ -243,6 +214,9 @@ export function AccountForm({ onSuccess, editData }: AccountFormProps) {
         )}
 
         <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={onCancel} type="button">
+            Batal
+          </Button>
           <Button type="submit">
             {isEditMode ? "Perbarui" : "Simpan"}
           </Button>
