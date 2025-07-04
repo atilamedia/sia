@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachMonthOfInterval, startOfYear, endOfYear } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Search, FileSpreadsheet, FileText, TrendingUp, TrendingDown, DollarSign, BarChart3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +44,27 @@ const Reports = () => {
     ),
   });
 
+  // Fetch monthly data for the current year
+  const currentYear = new Date().getFullYear();
+  const yearStart = startOfYear(new Date(currentYear, 0, 1));
+  const yearEnd = endOfYear(new Date(currentYear, 11, 31));
+
+  const { data: monthlyKasMasukData } = useQuery({
+    queryKey: ['monthly-kas-masuk', currentYear],
+    queryFn: () => siaApi.getKasMasuk(
+      format(yearStart, 'yyyy-MM-dd'),
+      format(yearEnd, 'yyyy-MM-dd')
+    ),
+  });
+
+  const { data: monthlyKasKeluarData } = useQuery({
+    queryKey: ['monthly-kas-keluar', currentYear],
+    queryFn: () => siaApi.getKasKeluar(
+      format(yearStart, 'yyyy-MM-dd'),
+      format(yearEnd, 'yyyy-MM-dd')
+    ),
+  });
+
   const { data: accountsData } = useQuery({
     queryKey: ['master-rekening'],
     queryFn: () => siaApi.getMasterRekening(),
@@ -60,14 +82,39 @@ const Reports = () => {
     { name: "Kas Keluar", value: totalKasKeluar, fill: "#EF4444" }
   ];
 
-  const monthlyData = [
-    { month: "Jan", kasmasuk: 50000000, kaskeluar: 40000000 },
-    { month: "Feb", kasmasuk: 60000000, kaskeluar: 45000000 },
-    { month: "Mar", kasmasuk: 55000000, kaskeluar: 50000000 },
-    { month: "Apr", kasmasuk: 70000000, kaskeluar: 60000000 },
-    { month: "Mei", kasmasuk: 65000000, kaskeluar: 55000000 },
-    { month: "Jun", kasmasuk: 80000000, kaskeluar: 70000000 },
-  ];
+  // Process monthly data from actual Supabase data
+  const monthlyData = (() => {
+    const months = eachMonthOfInterval({ start: yearStart, end: yearEnd });
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    
+    return months.map((month, index) => {
+      const monthStart = startOfMonth(month);
+      const monthEnd = endOfMonth(month);
+      
+      // Filter kas masuk for this month
+      const monthlyKasMasuk = monthlyKasMasukData?.data?.filter(item => {
+        if (!item.tanggal) return false;
+        const itemDate = new Date(item.tanggal);
+        return itemDate >= monthStart && itemDate <= monthEnd;
+      }) || [];
+      
+      // Filter kas keluar for this month
+      const monthlyKasKeluar = monthlyKasKeluarData?.data?.filter(item => {
+        if (!item.tanggal) return false;
+        const itemDate = new Date(item.tanggal);
+        return itemDate >= monthStart && itemDate <= monthEnd;
+      }) || [];
+      
+      const kasmasuk = monthlyKasMasuk.reduce((sum, item) => sum + (item.total || 0), 0);
+      const kaskeluar = monthlyKasKeluar.reduce((sum, item) => sum + (item.total || 0), 0);
+      
+      return {
+        month: monthNames[index],
+        kasmasuk,
+        kaskeluar
+      };
+    });
+  })();
 
   // Export functions
   const exportSummaryToExcel = () => {
@@ -366,7 +413,7 @@ const Reports = () => {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base md:text-lg">Ringkasan Bulanan</CardTitle>
+                  <CardTitle className="text-base md:text-lg">Ringkasan Bulanan {currentYear}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className={isMobile ? "h-[250px]" : "h-[300px]"}>
@@ -379,7 +426,14 @@ const Reports = () => {
                           tick={{ fontSize: isMobile ? 10 : 12 }}
                         />
                         <YAxis 
-                          tickFormatter={(value) => `${(value/1000000).toFixed(0)}jt`}
+                          tickFormatter={(value) => {
+                            if (value >= 1000000) {
+                              return `${(value/1000000).toFixed(0)}jt`;
+                            } else if (value >= 1000) {
+                              return `${(value/1000).toFixed(0)}rb`;
+                            }
+                            return value.toString();
+                          }}
                           fontSize={isMobile ? 10 : 12}
                           tick={{ fontSize: isMobile ? 10 : 12 }}
                         />
@@ -403,7 +457,7 @@ const Reports = () => {
           <TabsContent value="trends">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base md:text-lg">Trend Arus Kas Bulanan</CardTitle>
+                <CardTitle className="text-base md:text-lg">Trend Arus Kas Bulanan {currentYear}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className={isMobile ? "h-[300px]" : "h-[400px]"}>
@@ -416,7 +470,14 @@ const Reports = () => {
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                       />
                       <YAxis 
-                        tickFormatter={(value) => `${(value/1000000).toFixed(0)}jt`}
+                        tickFormatter={(value) => {
+                          if (value >= 1000000) {
+                            return `${(value/1000000).toFixed(0)}jt`;
+                          } else if (value >= 1000) {
+                            return `${(value/1000).toFixed(0)}rb`;
+                          }
+                          return value.toString();
+                        }}
                         fontSize={isMobile ? 10 : 12}
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                       />
