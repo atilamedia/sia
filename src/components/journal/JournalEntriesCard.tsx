@@ -2,8 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { JournalEntry } from "@/lib/types";
-import { BookText, Pencil, Trash } from "lucide-react";
+import { BookText, Edit, Trash2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -16,24 +15,41 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 
-interface JournalEntriesCardProps {
-  code: string;
-  entries: JournalEntry[];
-  onEdit: (entries: JournalEntry[]) => void;
-  onDelete: (code: string) => void;
+interface JournalEntry {
+  kode_rek: string;
+  deskripsi: string;
+  debit: number;
+  kredit: number;
+  m_rekening?: {
+    nama_rek: string;
+  };
 }
 
-export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalEntriesCardProps) {
+interface JournalData {
+  id_ju: string;
+  tanggal: string;
+  usernya: string;
+  jurnal_jenis?: {
+    nm_jj: string;
+  };
+  jurnal: JournalEntry[];
+}
+
+interface JournalEntriesCardProps {
+  journal: JournalData;
+  onEdit: (journal: JournalData) => void;
+  onDelete: (id: string) => void;
+}
+
+export function JournalEntriesCard({ journal, onEdit, onDelete }: JournalEntriesCardProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  const firstEntry = entries[0];
-  
   // Calculate totals
-  const totalDebit = entries.reduce((sum, entry) => sum + entry.debit, 0);
-  const totalCredit = entries.reduce((sum, entry) => sum + entry.credit, 0);
+  const totalDebit = journal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0;
+  const totalCredit = journal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0;
 
   const handleDelete = () => {
-    onDelete(code);
+    onDelete(journal.id_ju);
     setIsDeleteDialogOpen(false);
   };
   
@@ -44,13 +60,38 @@ export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalE
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BookText className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg">{code}</CardTitle>
+              <CardTitle className="text-lg">{journal.id_ju}</CardTitle>
             </div>
-            <div className="flex flex-col items-end text-sm">
-              <span>{formatDate(firstEntry.date)}</span>
-              <span className="text-muted-foreground">Oleh: {firstEntry.user}</span>
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end text-sm">
+                <span>{formatDate(journal.tanggal)}</span>
+                <span className="text-muted-foreground">Oleh: {journal.usernya}</span>
+              </div>
+              <div className="flex gap-1 ml-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onEdit(journal)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Hapus
+                </Button>
+              </div>
             </div>
           </div>
+          {journal.jurnal_jenis && (
+            <div className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded w-fit">
+              {journal.jurnal_jenis.nm_jj}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -64,15 +105,20 @@ export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalE
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry, index) => (
-                  <tr key={`${entry.code}-${entry.accountCode}-${index}`} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="p-4 font-medium">{entry.accountCode}</td>
-                    <td className="p-4">{entry.description}</td>
+                {journal.jurnal?.map((entry, index) => (
+                  <tr key={`${journal.id_ju}-${entry.kode_rek}-${index}`} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="p-4">
+                      <div className="font-medium">{entry.kode_rek}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {entry.m_rekening?.nama_rek}
+                      </div>
+                    </td>
+                    <td className="p-4">{entry.deskripsi}</td>
                     <td className="p-4 text-right">
                       {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
                     </td>
                     <td className="p-4 text-right">
-                      {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                      {entry.kredit > 0 ? formatCurrency(entry.kredit) : '-'}
                     </td>
                   </tr>
                 ))}
@@ -84,22 +130,6 @@ export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalE
               </tbody>
             </table>
           </div>
-          <div className="flex justify-end p-4 border-t">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => onEdit(entries)}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsDeleteDialogOpen(true)}
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                Hapus
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -108,7 +138,7 @@ export function JournalEntriesCard({ code, entries, onEdit, onDelete }: JournalE
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus jurnal {code}? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus jurnal {journal.id_ju}? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
