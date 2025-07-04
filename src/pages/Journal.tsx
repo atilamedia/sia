@@ -3,7 +3,6 @@ import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { JurnalForm } from "@/components/sia/JurnalForm";
 import { JournalEntryForm } from "@/components/journal/JournalEntryForm";
-import { JournalEntriesCard } from "@/components/journal/JournalEntriesCard";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi } from "@/lib/sia-api";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,17 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, FileSpreadsheet, FileText } from "lucide-react";
+import { Search, Download, FileEdit, Trash2, BookOpen, FileSpreadsheet, FileText } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -22,6 +31,8 @@ const Journal = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [editingJurnal, setEditingJurnal] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingJrnalId, setDeletingJurnalId] = useState<string>("");
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -44,9 +55,14 @@ const Journal = () => {
     setIsEditFormOpen(true);
   };
 
-  const handleDelete = async (id_ju: string) => {
+  const handleDelete = (id_ju: string) => {
+    setDeletingJurnalId(id_ju);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await siaApi.deleteJurnal(id_ju);
+      await siaApi.deleteJurnal(deletingJrnalId);
       toast({
         title: "Berhasil",
         description: "Jurnal berhasil dihapus",
@@ -60,6 +76,8 @@ const Journal = () => {
         variant: "destructive",
       });
     }
+    setIsDeleteDialogOpen(false);
+    setDeletingJurnalId("");
   };
 
   const handleEditSave = async (entries: any[]) => {
@@ -420,26 +438,227 @@ const Journal = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="space-y-4 p-4">
-              {isLoading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Loading...
-                </div>
-              ) : filteredData.length > 0 ? (
-                filteredData.map((jurnal) => (
-                  <JournalEntriesCard
-                    key={jurnal.id_ju}
-                    journal={jurnal}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  Tidak ada data jurnal yang ditemukan
-                </div>
-              )}
-            </div>
+            {/* Mobile Card View */}
+            {isMobile ? (
+              <div className="space-y-3 p-4">
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((jurnal) => (
+                    <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium text-sm">{jurnal.id_ju}</span>
+                            <span className="text-xs text-muted-foreground">
+                              - {jurnal.tanggal}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(jurnal)}
+                            >
+                              <FileEdit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(jurnal.id_ju)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded w-fit">
+                          {jurnal.jurnal_jenis?.nm_jj}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {jurnal.jurnal?.map((entry, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{entry.kode_rek}</p>
+                                <p className="text-xs text-muted-foreground">{entry.m_rekening?.nama_rek}</p>
+                                <p className="text-xs mt-1">{entry.deskripsi}</p>
+                              </div>
+                              <div className="text-right ml-2">
+                                {entry.debit > 0 && (
+                                  <p className="text-blue-600 font-medium text-xs">
+                                    D: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.debit)}
+                                  </p>
+                                )}
+                                {entry.kredit > 0 && (
+                                  <p className="text-green-600 font-medium text-xs">
+                                    K: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.kredit)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="mt-3 pt-3 border-t flex justify-between text-xs font-medium">
+                          <span>Total:</span>
+                          <div className="flex space-x-2">
+                            <span className="text-blue-600">
+                              D: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                notation: 'compact',
+                                compactDisplay: 'short',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                            </span>
+                            <span className="text-green-600">
+                              K: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                notation: 'compact',
+                                compactDisplay: 'short',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Tidak ada data jurnal yang ditemukan
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Desktop Card View (existing code remains the same)
+              <div className="space-y-4 p-4">
+                {isLoading ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((jurnal) => (
+                    <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium">{jurnal.id_ju}</span>
+                            <span className="text-sm text-muted-foreground">
+                              - {jurnal.tanggal}
+                            </span>
+                            <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {jurnal.jurnal_jenis?.nm_jj}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(jurnal)}
+                            >
+                              <FileEdit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(jurnal.id_ju)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left p-2 font-medium">Rekening</th>
+                                <th className="text-left p-2 font-medium">Deskripsi</th>
+                                <th className="text-right p-2 font-medium">Debit</th>
+                                <th className="text-right p-2 font-medium">Kredit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {jurnal.jurnal?.map((entry, index) => (
+                                <tr key={index} className="border-b last:border-b-0">
+                                  <td className="p-2">
+                                    <div className="font-medium">{entry.kode_rek}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {entry.m_rekening?.nama_rek}
+                                    </div>
+                                  </td>
+                                  <td className="p-2">{entry.deskripsi}</td>
+                                  <td className="p-2 text-right font-medium text-blue-600">
+                                    {entry.debit > 0 ? new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.debit) : '-'}
+                                  </td>
+                                  <td className="p-2 text-right font-medium text-green-600">
+                                    {entry.kredit > 0 ? new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.kredit) : '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
+                          <span>Total:</span>
+                          <div className="flex space-x-4">
+                            <span className="text-blue-600">
+                              Debit: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                            </span>
+                            <span className="text-green-600">
+                              Kredit: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Tidak ada data jurnal yang ditemukan
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -465,6 +684,27 @@ const Journal = () => {
         }))}
         isEditing={true}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jurnal {deletingJrnalId}? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
