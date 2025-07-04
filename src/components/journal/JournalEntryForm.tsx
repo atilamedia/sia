@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,24 +26,43 @@ export function JournalEntryForm({
   initialEntries,
   isEditing = false
 }: JournalEntryFormProps) {
-  const [journalCode, setJournalCode] = useState(initialEntries?.[0]?.code || "");
-  const [journalDate, setJournalDate] = useState(
-    initialEntries?.[0]?.date || formatDate(new Date())
-  );
+  const [journalCode, setJournalCode] = useState("");
+  const [journalDate, setJournalDate] = useState(formatDate(new Date()));
   const [journalType, setJournalType] = useState(journalTypes[0]?.id || "");
-  const [entries, setEntries] = useState<Array<{ accountCode: string; description: string; debit: number; credit: number }>>(() => {
-    if (initialEntries && initialEntries.length > 0) {
-      console.log('Initial entries:', initialEntries);
-      return initialEntries.map(entry => ({
-        accountCode: entry.accountCode,
-        description: entry.description,
-        debit: entry.debit,
-        credit: entry.credit
-      }));
+  const [entries, setEntries] = useState<Array<{ accountCode: string; description: string; debit: number; credit: number }>>([
+    { accountCode: "", description: "", debit: 0, credit: 0 }
+  ]);
+
+  // Initialize form data when modal opens or initialEntries change
+  useEffect(() => {
+    if (isOpen) {
+      if (initialEntries && initialEntries.length > 0) {
+        console.log('Loading initial entries:', initialEntries);
+        
+        // Set journal header data from first entry
+        const firstEntry = initialEntries[0];
+        setJournalCode(firstEntry.code || "");
+        setJournalDate(firstEntry.date || formatDate(new Date()));
+        
+        // Map all entries to form format
+        const mappedEntries = initialEntries.map(entry => ({
+          accountCode: entry.accountCode || "",
+          description: entry.description || "",
+          debit: entry.debit || 0,
+          credit: entry.credit || 0
+        }));
+        
+        setEntries(mappedEntries);
+        console.log('Mapped entries:', mappedEntries);
+      } else {
+        // Reset to default values for new entry
+        setJournalCode("");
+        setJournalDate(formatDate(new Date()));
+        setJournalType(journalTypes[0]?.id || "");
+        setEntries([{ accountCode: "", description: "", debit: 0, credit: 0 }]);
+      }
     }
-    
-    return [{ accountCode: "", description: "", debit: 0, credit: 0 }];
-  });
+  }, [isOpen, initialEntries, journalTypes]);
 
   const addEntry = () => {
     setEntries([...entries, { accountCode: "", description: "", debit: 0, credit: 0 }]);
