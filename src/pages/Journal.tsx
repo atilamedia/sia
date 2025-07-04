@@ -677,11 +677,11 @@ const Journal = () => {
           date: editingJurnal.tanggal,
           accountCode: entry.kode_rek,
           description: entry.deskripsi,
-          debit: entry.debit,
-          credit: entry.kredit,
+          debit: entry.debit || 0,
+          credit: entry.kredit || 0,
           user: editingJurnal.usernya,
           createdAt: editingJurnal.at_create
-        }))}
+        })) || []}
         isEditing={true}
       />
 
