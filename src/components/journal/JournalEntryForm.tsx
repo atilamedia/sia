@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { JournalEntry, JournalType } from "@/lib/types";
 import { formatDate, generateId } from "@/lib/utils";
-import { sampleAccounts } from "@/lib/data";
+import { siaApi, type MasterRekening } from "@/lib/sia-api";
 
 interface JournalEntryFormProps {
   isOpen: boolean;
@@ -31,12 +31,33 @@ export function JournalEntryForm({
   const [entries, setEntries] = useState<Array<{ accountCode: string; description: string; debit: number; credit: number }>>([
     { accountCode: "", description: "", debit: 0, credit: 0 }
   ]);
+  const [accounts, setAccounts] = useState<MasterRekening[]>([]);
+
+  // Load accounts from API
+  useEffect(() => {
+    const loadAccounts = async () => {
+      try {
+        const response = await siaApi.getMasterRekening();
+        // Filter only detail accounts
+        const detailAccounts = response.data.filter(acc => acc.k_level === 'Detail');
+        setAccounts(detailAccounts);
+        console.log('Loaded detail accounts:', detailAccounts);
+      } catch (error) {
+        console.error('Error loading accounts:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadAccounts();
+    }
+  }, [isOpen]);
 
   // Initialize form data when modal opens or initialEntries change
   useEffect(() => {
     if (isOpen) {
-      if (initialEntries && initialEntries.length > 0) {
+      if (initialEntries && initialEntries.length > 0 && accounts.length > 0) {
         console.log('Loading initial entries:', initialEntries);
+        console.log('Available accounts:', accounts);
         
         // Set journal header data from first entry
         const firstEntry = initialEntries[0];
@@ -49,13 +70,16 @@ export function JournalEntryForm({
           setJournalType(matchingType.id);
         }
         
-        // Map all entries to form format
-        const mappedEntries = initialEntries.map(entry => ({
-          accountCode: entry.accountCode || "",
-          description: entry.description || "",
-          debit: entry.debit || 0,
-          credit: entry.credit || 0
-        }));
+        // Map all entries to form format with proper account matching
+        const mappedEntries = initialEntries.map(entry => {
+          console.log('Mapping entry with accountCode:', entry.accountCode);
+          return {
+            accountCode: entry.accountCode || "",
+            description: entry.description || "",
+            debit: entry.debit || 0,
+            credit: entry.credit || 0
+          };
+        });
         
         setEntries(mappedEntries);
         console.log('Mapped entries:', mappedEntries);
@@ -67,7 +91,7 @@ export function JournalEntryForm({
         setEntries([{ accountCode: "", description: "", debit: 0, credit: 0 }]);
       }
     }
-  }, [isOpen, initialEntries, journalTypes]);
+  }, [isOpen, initialEntries, journalTypes, accounts]);
 
   const addEntry = () => {
     setEntries([...entries, { accountCode: "", description: "", debit: 0, credit: 0 }]);
@@ -185,9 +209,9 @@ export function JournalEntryForm({
                         <SelectValue placeholder="Pilih akun" />
                       </SelectTrigger>
                       <SelectContent>
-                        {sampleAccounts.map((account) => (
-                          <SelectItem key={account.code} value={account.code}>
-                            {account.code} - {account.name}
+                        {accounts.map((account) => (
+                          <SelectItem key={account.kode_rek} value={account.kode_rek}>
+                            {account.kode_rek} - {account.nama_rek}
                           </SelectItem>
                         ))}
                       </SelectContent>
