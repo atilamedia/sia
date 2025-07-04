@@ -33,6 +33,7 @@ export function JournalEntryForm({
   const [journalType, setJournalType] = useState(journalTypes[0]?.id || "");
   const [entries, setEntries] = useState<Array<{ accountCode: string; description: string; debit: number; credit: number }>>(() => {
     if (initialEntries && initialEntries.length > 0) {
+      console.log('Initial entries:', initialEntries);
       return initialEntries.map(entry => ({
         accountCode: entry.accountCode,
         description: entry.description,
@@ -105,22 +106,14 @@ export function JournalEntryForm({
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="journalType">Jenis Jurnal</Label>
-              <Select
-                value={journalType}
-                onValueChange={setJournalType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih jenis jurnal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {journalTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="journalCode">Nomor Jurnal</Label>
+              <Input
+                id="journalCode"
+                value={journalCode}
+                onChange={(e) => setJournalCode(e.target.value)}
+                disabled={isEditing}
+                placeholder="Nomor jurnal akan di-generate otomatis"
+              />
             </div>
             
             <div className="space-y-2">
@@ -132,6 +125,25 @@ export function JournalEntryForm({
                 onChange={(e) => setJournalDate(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="journalType">Jenis Jurnal</Label>
+            <Select
+              value={journalType}
+              onValueChange={setJournalType}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih jenis jurnal" />
+              </SelectTrigger>
+              <SelectContent>
+                {journalTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="border rounded-md p-4">
