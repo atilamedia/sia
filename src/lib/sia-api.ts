@@ -134,6 +134,19 @@ export class SiaApiClient {
     });
   }
 
+  async updateKasMasuk(data: KasMasuk): Promise<{ data: any; message: string }> {
+    return this.callApi('kas-masuk', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteKasMasuk(id_km: string): Promise<{ message: string }> {
+    return this.callApi(`kas-masuk?id_km=${id_km}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Kas Keluar methods
   async getKasKeluar(startDate?: string, endDate?: string): Promise<{ data: any[] }> {
     const params = new URLSearchParams();

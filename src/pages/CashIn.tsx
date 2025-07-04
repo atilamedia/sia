@@ -1,16 +1,16 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KasMasukForm } from "@/components/sia/KasMasukForm";
+import { DeleteKasMasukDialog } from "@/components/sia/DeleteKasMasukDialog";
 import { useQuery } from "@tanstack/react-query";
-import { siaApi } from "@/lib/sia-api";
+import { siaApi, type KasMasuk } from "@/lib/sia-api";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { Search, Download, Filter, FileEdit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
+import { Search, Download, Filter, Edit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -18,6 +18,8 @@ const CashIn = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingKasMasuk, setEditingKasMasuk] = useState<any>(null);
+  const [deleteKasMasuk, setDeleteKasMasuk] = useState<any>(null);
   const isMobile = useIsMobile();
 
   const { data: kasMasukData, isLoading, refetch } = useQuery({
@@ -29,6 +31,24 @@ const CashIn = () => {
   });
 
   const handleFormSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+    setEditingKasMasuk(null);
+    refetch();
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingKasMasuk(item);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingKasMasuk(null);
+  };
+
+  const handleDelete = (item: any) => {
+    setDeleteKasMasuk(item);
+  };
+
+  const handleDeleteSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
     refetch();
   };
@@ -167,7 +187,11 @@ const CashIn = () => {
         <div className={isMobile ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
           {/* Form Section */}
           <div className="order-1">
-            <KasMasukForm onSuccess={handleFormSuccess} />
+            <KasMasukForm 
+              onSuccess={handleFormSuccess} 
+              editData={editingKasMasuk}
+              onCancel={handleCancelEdit}
+            />
           </div>
 
           {/* Summary Section */}
@@ -339,10 +363,15 @@ const CashIn = () => {
                           </div>
                           
                           <div className="flex justify-end space-x-2 pt-2">
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                              <FileEdit className="h-4 w-4" />
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleEdit(item)}>
+                              <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(item)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
@@ -425,10 +454,20 @@ const CashIn = () => {
                           </td>
                           <td className="p-4 align-middle text-sm">
                             <div className="flex items-center justify-center space-x-2">
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                <FileEdit className="h-4 w-4" />
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 w-8 p-0"
+                                onClick={() => handleEdit(item)}
+                              >
+                                <Edit className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(item)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -449,6 +488,14 @@ const CashIn = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteKasMasukDialog
+        open={!!deleteKasMasuk}
+        onOpenChange={(open) => !open && setDeleteKasMasuk(null)}
+        kasMasuk={deleteKasMasuk}
+        onSuccess={handleDeleteSuccess}
+      />
     </Layout>
   );
 };
