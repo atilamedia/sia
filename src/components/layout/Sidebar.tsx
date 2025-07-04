@@ -23,7 +23,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
   { name: "Kas Masuk", href: "/cash-in", icon: TrendingUp },
   { name: "Kas Keluar", href: "/cash-out", icon: TrendingDown },
-  { name: "Jurnal", href: "/journal", icon: BookOpen },
+  { name: "Jurnal Umum", href: "/journal", icon: BookOpen },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Akun Rekening", href: "/accounts", icon: Users },
