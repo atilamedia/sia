@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -392,7 +391,6 @@ const Reports = () => {
                           outerRadius={isMobile ? 80 : 100}
                           dataKey="value"
                           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          labelStyle={{ fontSize: isMobile ? 10 : 12 }}
                         >
                           {cashFlowChartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.fill} />
