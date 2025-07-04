@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Journal = () => {
   const [date, setDate] = useState<DateRange | undefined>(undefined);
@@ -31,8 +32,9 @@ const Journal = () => {
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [editingJurnal, setEditingJurnal] = useState<any>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletingJurnalId, setDeletingJurnalId] = useState<string>("");
+  const [deletingJrnalId, setDeletingJurnalId] = useState<string>("");
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const { data: jurnalData, isLoading, refetch } = useQuery({
     queryKey: ['jurnal', date?.from, date?.to, refreshTrigger],
@@ -60,7 +62,7 @@ const Journal = () => {
 
   const confirmDelete = async () => {
     try {
-      await siaApi.deleteJurnal(deletingJurnalId);
+      await siaApi.deleteJurnal(deletingJrnalId);
       toast({
         title: "Berhasil",
         description: "Jurnal berhasil dihapus",
@@ -278,65 +280,86 @@ const Journal = () => {
 
   return (
     <Layout title="Jurnal">
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4 md:space-y-6">
+        {/* Form and Summary Section - Stack on mobile */}
+        <div className={isMobile ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
           {/* Form Section */}
-          <div>
+          <div className="order-1">
             <JurnalForm onSuccess={handleFormSuccess} />
           </div>
 
           {/* Summary Section */}
-          <div className="space-y-6">
+          <div className="order-2 space-y-4 md:space-y-6">
+            {/* Summary Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Ringkasan Jurnal</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Ringkasan Jurnal</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span>Total Jurnal:</span>
-                    <span className="font-bold">{filteredData.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Total Entries:</span>
-                    <span className="font-bold">{totalEntries}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Total Debit:</span>
-                    <span className="font-bold text-blue-600">
-                      {new Intl.NumberFormat('id-ID', {
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm text-muted-foreground">Total Jurnal:</span>
+                  <span className="font-semibold text-sm">{filteredData.length}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm text-muted-foreground">Total Entries:</span>
+                  <span className="font-semibold text-sm">{totalEntries}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm text-muted-foreground">Total Debit:</span>
+                  <span className="font-semibold text-blue-600 text-sm">
+                    {isMobile ? 
+                      new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        notation: 'compact',
+                        compactDisplay: 'short',
+                        minimumFractionDigits: 0,
+                      }).format(totalDebit)
+                      :
+                      new Intl.NumberFormat('id-ID', {
                         style: 'currency',
                         currency: 'IDR',
                         minimumFractionDigits: 0,
-                      }).format(totalDebit)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Total Kredit:</span>
-                    <span className="font-bold text-green-600">
-                      {new Intl.NumberFormat('id-ID', {
+                      }).format(totalDebit)
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-sm text-muted-foreground">Total Kredit:</span>
+                  <span className="font-semibold text-green-600 text-sm">
+                    {isMobile ? 
+                      new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        notation: 'compact',
+                        compactDisplay: 'short',
+                        minimumFractionDigits: 0,
+                      }).format(totalKredit)
+                      :
+                      new Intl.NumberFormat('id-ID', {
                         style: 'currency',
                         currency: 'IDR',
                         minimumFractionDigits: 0,
-                      }).format(totalKredit)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-t pt-2">
-                    <span>Balance:</span>
-                    <span className={`font-bold ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
-                      {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
-                    </span>
-                  </div>
+                      }).format(totalKredit)
+                    }
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-2">
+                  <span className="text-sm text-muted-foreground">Balance:</span>
+                  <span className={`font-semibold text-sm ${totalDebit === totalKredit ? 'text-green-600' : 'text-red-600'}`}>
+                    {totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Info Card */}
             <Card>
-              <CardHeader>
-                <CardTitle>Informasi</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg">Informasi</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-sm text-gray-600 space-y-2">
+                <div className="text-xs md:text-sm text-gray-600 space-y-2">
                   <p>• Form digunakan untuk mencatat transaksi akuntansi dengan metode double entry</p>
                   <p>• Total debit harus sama dengan total kredit (balance)</p>
                   <p>• ID jurnal di-generate otomatis dengan format JU+YYYYMMDD+NNN</p>
@@ -349,144 +372,293 @@ const Journal = () => {
 
         {/* Data Table Section */}
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <CardTitle>Daftar Jurnal Umum</CardTitle>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Cari jurnal..."
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <DateRangePicker 
-                  dateRange={date} 
-                  onDateRangeChange={setDate}
-                />
-                <Button onClick={exportToExcel} variant="outline">
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Excel
-                </Button>
-                <Button onClick={exportToPDF} variant="outline">
-                  <FileText className="mr-2 h-4 w-4" />
-                  PDF
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+          <CardHeader className="pb-4">
             <div className="space-y-4">
-              {isLoading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Loading...
+              <CardTitle className="text-base md:text-lg">Daftar Jurnal Umum</CardTitle>
+              
+              {/* Mobile Search and Filters */}
+              {isMobile ? (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Cari jurnal..."
+                      className="pl-9 h-10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <DateRangePicker 
+                      dateRange={date} 
+                      onDateRangeChange={setDate}
+                    />
+                    <div className="flex space-x-2">
+                      <Button onClick={exportToExcel} variant="outline" size="sm" className="flex-1">
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Excel
+                      </Button>
+                      <Button onClick={exportToPDF} variant="outline" size="sm" className="flex-1">
+                        <FileText className="mr-2 h-4 w-4" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              ) : filteredData.length > 0 ? (
-                filteredData.map((jurnal) => (
-                  <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <BookOpen className="h-4 w-4 text-blue-500" />
-                          <span className="font-medium">{jurnal.id_ju}</span>
-                          <span className="text-sm text-muted-foreground">
-                            - {jurnal.tanggal}
-                          </span>
-                          <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                            {jurnal.jurnal_jenis?.nm_jj}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 w-8 p-0"
-                            onClick={() => handleEdit(jurnal)}
-                          >
-                            <FileEdit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(jurnal.id_ju)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2 font-medium">Rekening</th>
-                              <th className="text-left p-2 font-medium">Deskripsi</th>
-                              <th className="text-right p-2 font-medium">Debit</th>
-                              <th className="text-right p-2 font-medium">Kredit</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {jurnal.jurnal?.map((entry, index) => (
-                              <tr key={index} className="border-b last:border-b-0">
-                                <td className="p-2">
-                                  <div className="font-medium">{entry.kode_rek}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {entry.m_rekening?.nama_rek}
-                                  </div>
-                                </td>
-                                <td className="p-2">{entry.deskripsi}</td>
-                                <td className="p-2 text-right font-medium text-blue-600">
-                                  {entry.debit > 0 ? new Intl.NumberFormat('id-ID', {
-                                    style: 'currency',
-                                    currency: 'IDR',
-                                    minimumFractionDigits: 0,
-                                  }).format(entry.debit) : '-'}
-                                </td>
-                                <td className="p-2 text-right font-medium text-green-600">
-                                  {entry.kredit > 0 ? new Intl.NumberFormat('id-ID', {
-                                    style: 'currency',
-                                    currency: 'IDR',
-                                    minimumFractionDigits: 0,
-                                  }).format(entry.kredit) : '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
-                        <span>Total:</span>
-                        <div className="flex space-x-4">
-                          <span className="text-blue-600">
-                            Debit: {new Intl.NumberFormat('id-ID', {
-                              style: 'currency',
-                              currency: 'IDR',
-                              minimumFractionDigits: 0,
-                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
-                          </span>
-                          <span className="text-green-600">
-                            Kredit: {new Intl.NumberFormat('id-ID', {
-                              style: 'currency',
-                              currency: 'IDR',
-                              minimumFractionDigits: 0,
-                            }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
               ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  Tidak ada data jurnal yang ditemukan
+                // Desktop Search and Filters
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Cari jurnal..."
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <DateRangePicker 
+                      dateRange={date} 
+                      onDateRangeChange={setDate}
+                    />
+                    <Button onClick={exportToExcel} variant="outline">
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </Button>
+                    <Button onClick={exportToPDF} variant="outline">
+                      <FileText className="mr-2 h-4 w-4" />
+                      PDF
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {/* Mobile Card View */}
+            {isMobile ? (
+              <div className="space-y-3 p-4">
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((jurnal) => (
+                    <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium text-sm">{jurnal.id_ju}</span>
+                            <span className="text-xs text-muted-foreground">
+                              - {jurnal.tanggal}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(jurnal)}
+                            >
+                              <FileEdit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(jurnal.id_ju)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded w-fit">
+                          {jurnal.jurnal_jenis?.nm_jj}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {jurnal.jurnal?.map((entry, index) => (
+                          <div key={index} className="border-b pb-2 last:border-b-0">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <p className="font-medium text-sm">{entry.kode_rek}</p>
+                                <p className="text-xs text-muted-foreground">{entry.m_rekening?.nama_rek}</p>
+                                <p className="text-xs mt-1">{entry.deskripsi}</p>
+                              </div>
+                              <div className="text-right ml-2">
+                                {entry.debit > 0 && (
+                                  <p className="text-blue-600 font-medium text-xs">
+                                    D: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.debit)}
+                                  </p>
+                                )}
+                                {entry.kredit > 0 && (
+                                  <p className="text-green-600 font-medium text-xs">
+                                    K: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.kredit)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="mt-3 pt-3 border-t flex justify-between text-xs font-medium">
+                          <span>Total:</span>
+                          <div className="flex space-x-2">
+                            <span className="text-blue-600">
+                              D: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                notation: 'compact',
+                                compactDisplay: 'short',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                            </span>
+                            <span className="text-green-600">
+                              K: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                notation: 'compact',
+                                compactDisplay: 'short',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Tidak ada data jurnal yang ditemukan
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Desktop Card View (existing code remains the same)
+              <div className="space-y-4 p-4">
+                {isLoading ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Loading...
+                  </div>
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((jurnal) => (
+                    <Card key={jurnal.id_ju} className="border-l-4 border-l-blue-500">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-blue-500" />
+                            <span className="font-medium">{jurnal.id_ju}</span>
+                            <span className="text-sm text-muted-foreground">
+                              - {jurnal.tanggal}
+                            </span>
+                            <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              {jurnal.jurnal_jenis?.nm_jj}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(jurnal)}
+                            >
+                              <FileEdit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(jurnal.id_ju)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b">
+                                <th className="text-left p-2 font-medium">Rekening</th>
+                                <th className="text-left p-2 font-medium">Deskripsi</th>
+                                <th className="text-right p-2 font-medium">Debit</th>
+                                <th className="text-right p-2 font-medium">Kredit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {jurnal.jurnal?.map((entry, index) => (
+                                <tr key={index} className="border-b last:border-b-0">
+                                  <td className="p-2">
+                                    <div className="font-medium">{entry.kode_rek}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {entry.m_rekening?.nama_rek}
+                                    </div>
+                                  </td>
+                                  <td className="p-2">{entry.deskripsi}</td>
+                                  <td className="p-2 text-right font-medium text-blue-600">
+                                    {entry.debit > 0 ? new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.debit) : '-'}
+                                  </td>
+                                  <td className="p-2 text-right font-medium text-green-600">
+                                    {entry.kredit > 0 ? new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      minimumFractionDigits: 0,
+                                    }).format(entry.kredit) : '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-3 pt-3 border-t flex justify-between text-sm font-medium">
+                          <span>Total:</span>
+                          <div className="flex space-x-4">
+                            <span className="text-blue-600">
+                              Debit: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}
+                            </span>
+                            <span className="text-green-600">
+                              Kredit: {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                                minimumFractionDigits: 0,
+                              }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Tidak ada data jurnal yang ditemukan
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -519,7 +691,7 @@ const Journal = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Jurnal</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus jurnal {deletingJurnalId}? Tindakan ini tidak dapat dibatalkan.
+              Apakah Anda yakin ingin menghapus jurnal {deletingJrnalId}? Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
