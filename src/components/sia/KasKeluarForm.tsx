@@ -127,7 +127,6 @@ export function KasKeluarForm({ onSuccess, editData, onCancel }: KasKeluarFormPr
                 value={formData.kode_rek}
                 onValueChange={(value) => handleInputChange('kode_rek', value)}
                 placeholder="Pilih rekening kas"
-                filterType="kas"
               />
             </div>
 
