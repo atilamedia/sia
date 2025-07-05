@@ -14,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { siaApi, type MasterRekening } from "@/lib/sia-api";
@@ -89,34 +90,36 @@ export function AccountSelector({
       <PopoverContent className="w-full p-0 z-[60]" style={{ width: 'var(--radix-popover-trigger-width)' }}>
         <Command>
           <CommandInput placeholder="Cari rekening..." />
-          <CommandList className="max-h-[300px] overflow-y-auto">
+          <CommandList>
             <CommandEmpty>Tidak ada rekening ditemukan.</CommandEmpty>
-            <CommandGroup>
-              {accounts.map((account) => (
-                <CommandItem
-                  key={account.kode_rek}
-                  value={`${account.kode_rek} ${account.nama_rek}`}
-                  onSelect={() => {
-                    onValueChange(account.kode_rek);
-                    setOpen(false);
-                  }}
-                  className="cursor-pointer"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === account.kode_rek ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">{account.kode_rek}</div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {account.nama_rek}
+            <ScrollArea className="h-[300px]">
+              <CommandGroup>
+                {accounts.map((account) => (
+                  <CommandItem
+                    key={account.kode_rek}
+                    value={`${account.kode_rek} ${account.nama_rek}`}
+                    onSelect={() => {
+                      onValueChange(account.kode_rek);
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === account.kode_rek ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium">{account.kode_rek}</div>
+                      <div className="text-sm text-muted-foreground truncate">
+                        {account.nama_rek}
+                      </div>
                     </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </ScrollArea>
           </CommandList>
         </Command>
       </PopoverContent>
