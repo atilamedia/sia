@@ -29,7 +29,7 @@ export function AccountSelector({
   value, 
   onValueChange, 
   placeholder = "Pilih rekening...",
-  filterType = 'kas'
+  filterType = 'all'
 }: AccountSelectorProps) {
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<MasterRekening[]>([]);
@@ -45,11 +45,16 @@ export function AccountSelector({
       const response = await siaApi.getMasterRekening();
       let filteredAccounts = response.data;
       
+      // Only filter if specifically requested
       if (filterType === 'kas') {
         filteredAccounts = response.data.filter(acc => 
           acc.k_level === 'Detail Kas' || acc.k_level === 'Detail Bk'
         );
       }
+      
+      console.log('All accounts loaded:', response.data.length);
+      console.log('Filtered accounts:', filteredAccounts.length);
+      console.log('Filter type:', filterType);
       
       setAccounts(filteredAccounts);
     } catch (error) {
