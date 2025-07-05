@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Download, FileText, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
+import { Calendar, Download, FileText, FileSpreadsheet, TrendingUp, TrendingDown, Plus, Edit, Trash2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,8 @@ import { id } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { LRAModal } from "@/components/lra/LRAModal";
+import { DeleteLRADialog } from "@/components/lra/DeleteLRADialog";
 
 interface LRAData {
   kode_rek: string;
@@ -30,6 +31,11 @@ export default function LaporanRealisasiAnggaran() {
     from: new Date(new Date().getFullYear(), 0, 1), // Awal tahun
     to: new Date()
   });
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingLRA, setEditingLRA] = useState<LRAData | undefined>();
 
   const currentYear = new Date().getFullYear();
 
@@ -114,6 +120,24 @@ export default function LaporanRealisasiAnggaran() {
   const totalPersentase = totalAnggaran > 0 ? (totalRealisasi / totalAnggaran) * 100 : 0;
 
   const isLoading = loadingAnggaran || loadingRealisasi;
+
+  // CRUD handlers
+  const handleCreateLRA = () => {
+    setModalMode('create');
+    setEditingLRA(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditLRA = (lra: LRAData) => {
+    setModalMode('edit');
+    setEditingLRA(lra);
+    setModalOpen(true);
+  };
+
+  const handleDeleteLRA = (lra: LRAData) => {
+    setEditingLRA(lra);
+    setDeleteDialogOpen(true);
+  };
 
   const handleExportExcel = () => {
     try {
@@ -361,8 +385,12 @@ export default function LaporanRealisasiAnggaran() {
               />
             </div>
             
-            {/* Export Buttons */}
+            {/* Action Buttons */}
             <div className="flex gap-2">
+              <Button onClick={handleCreateLRA} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Tambah
+              </Button>
               <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
                 <FileSpreadsheet className="h-4 w-4" />
                 Excel
@@ -426,7 +454,7 @@ export default function LaporanRealisasiAnggaran() {
           </Card>
         </div>
 
-        {/* Tabel LRA */}
+        {/* Tabel LRA dengan Action Buttons */}
         <Card>
           <CardHeader>
             <CardTitle>Detail Realisasi Anggaran</CardTitle>
@@ -456,12 +484,13 @@ export default function LaporanRealisasiAnggaran() {
                       <TableHead className="text-right">Selisih</TableHead>
                       <TableHead className="text-right">Persentase</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {lraData.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                           Tidak ada data untuk periode yang dipilih
                         </TableCell>
                       </TableRow>
@@ -499,6 +528,26 @@ export default function LaporanRealisasiAnggaran() {
                                'Normal'}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditLRA(item)}
+                                className="flex items-center gap-1"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteLRA(item)}
+                                className="flex items-center gap-1 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -508,6 +557,31 @@ export default function LaporanRealisasiAnggaran() {
             )}
           </CardContent>
         </Card>
+
+        {/* Modal untuk input/edit anggaran */}
+        <LRAModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tahun={currentYear}
+          editData={editingLRA ? {
+            kode_rek: editingLRA.kode_rek,
+            tahun: currentYear,
+            total: editingLRA.anggaran,
+            tanda: 'Y',
+            validasi_realisasi: 'Y'
+          } : undefined}
+          mode={modalMode}
+        />
+
+        {/* Dialog konfirmasi delete */}
+        {editingLRA && (
+          <DeleteLRADialog
+            isOpen={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            lraData={editingLRA}
+            tahun={currentYear}
+          />
+        )}
       </div>
     </Layout>
   );
