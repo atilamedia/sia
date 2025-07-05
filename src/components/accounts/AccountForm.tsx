@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect } from "react";
 
 const accountSchema = z.object({
   code: z.string().min(1, "Kode rekening diperlukan"),
@@ -65,6 +65,11 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
     resolver: zodResolver(accountSchema),
     defaultValues,
   });
+
+  // Reset form when account data changes
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [account, form]);
 
   function handleSubmit(data: AccountFormValues) {
     onSubmit(data);
