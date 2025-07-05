@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Download, FileText } from "lucide-react";
+import { Calendar, Download, FileText, FileExcel } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,44 +78,48 @@ export default function BukuKasUmum() {
 
   const isLoading = loadingKasMasuk || loadingKasKeluar;
 
-  const handleExport = () => {
-    toast.success("Ekspor BKU berhasil!");
+  const handleExportPDF = () => {
+    toast.success("Ekspor PDF berhasil!");
+  };
+
+  const handleExportExcel = () => {
+    toast.success("Ekspor Excel berhasil!");
   };
 
   return (
     <Layout title="Buku Kas Umum">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Header with Filter and Export Buttons */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Buku Kas Umum</h1>
             <p className="text-gray-600">Laporan kronologis semua transaksi kas</p>
           </div>
-          <Button onClick={handleExport} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Ekspor PDF
-          </Button>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {/* Filter Periode */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <DateRangePicker
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                className="w-full sm:w-auto"
+              />
+            </div>
+            
+            {/* Export Buttons */}
+            <div className="flex gap-2">
+              <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+                <FileExcel className="h-4 w-4" />
+                Excel
+              </Button>
+              <Button onClick={handleExportPDF} className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </div>
+          </div>
         </div>
-
-        {/* Filter */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Filter Periode
-            </CardTitle>
-            <CardDescription>
-              Pilih rentang tanggal untuk menampilkan transaksi
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DateRangePicker
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              className="w-full sm:w-auto"
-            />
-          </CardContent>
-        </Card>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
