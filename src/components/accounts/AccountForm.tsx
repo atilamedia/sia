@@ -1,3 +1,4 @@
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -46,7 +47,7 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
     name: account.name,
     level: account.level,
     levelType: account.levelType,
-    parentCode: account.parentCode === ' ' || account.parentCode === '' ? '-' : account.parentCode,
+    parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' ? account.parentCode : "-",
     division: account.division,
     accountType: account.accountType,
     balance: account.balance,
@@ -68,7 +69,19 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
 
   // Reset form when account data changes
   useEffect(() => {
-    form.reset(defaultValues);
+    if (account) {
+      const newValues = {
+        code: account.code,
+        name: account.name,
+        level: account.level,
+        levelType: account.levelType,
+        parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' ? account.parentCode : "-",
+        division: account.division,
+        accountType: account.accountType,
+        balance: account.balance,
+      };
+      form.reset(newValues);
+    }
   }, [account, form]);
 
   function handleSubmit(data: AccountFormValues) {
