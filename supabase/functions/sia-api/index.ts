@@ -24,7 +24,7 @@ serve(async (req) => {
     const url = new URL(req.url)
     let path = url.pathname
     
-    // Remove various possible prefixes
+    // Remove various possible prefixes to normalize the path
     if (path.startsWith('/functions/v1/sia-api')) {
       path = path.replace('/functions/v1/sia-api', '')
     } else if (path.startsWith('/sia-api')) {
@@ -37,7 +37,7 @@ serve(async (req) => {
     }
     
     // Handle empty path
-    if (!path) {
+    if (!path || path === '/') {
       path = '/'
     }
     
@@ -116,8 +116,8 @@ serve(async (req) => {
           ...body
         }
         
-        // Handle rek_induk field properly
-        if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null') {
+        // Handle rek_induk field properly - convert various null-like values to actual null
+        if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null' || body.rek_induk === undefined) {
           cleanedData.rek_induk = null
         }
         
