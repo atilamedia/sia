@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,14 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { siaApi, type MasterRekening } from "@/lib/sia-api";
 import { toast } from "sonner";
-import { Search, Plus, FileEdit, Trash2, Download, Wallet } from "lucide-react";
+import { Search, Plus, FileEdit, Trash2, Download, Wallet, Calculator } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AccountBalanceModal } from "@/components/accounts/AccountBalanceModal";
 
 const Accounts = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<MasterRekening | null>(null);
+  const [balanceModalOpen, setBalanceModalOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<{ kode: string; nama: string } | null>(null);
   const [formData, setFormData] = useState<Partial<MasterRekening>>({
     kode_rek: '',
     nama_rek: '',
@@ -91,6 +93,11 @@ const Accounts = () => {
     }
   };
 
+  const handleViewBalance = (account: MasterRekening) => {
+    setSelectedAccount({ kode: account.kode_rek, nama: account.nama_rek || '' });
+    setBalanceModalOpen(true);
+  };
+
   const exportData = () => {
     const csvContent = [
       ['Kode Rekening', 'Nama Rekening', 'Saldo', 'Level', 'K-Level', 'Rekening Induk', 'Jenis'],
@@ -138,7 +145,7 @@ const Accounts = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Saldo</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Saldo Awal</CardTitle>
               <Wallet className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
@@ -150,7 +157,7 @@ const Accounts = () => {
                 }).format(totalSaldo)}
               </div>
               <p className="text-xs text-muted-foreground">
-                Saldo keseluruhan
+                Saldo input manual
               </p>
             </CardContent>
           </Card>
@@ -358,6 +365,14 @@ const Accounts = () => {
                           size="sm" 
                           variant="ghost" 
                           className="h-8 w-8 p-0"
+                          onClick={() => handleViewBalance(account)}
+                        >
+                          <Calculator className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-8 w-8 p-0"
                           onClick={() => handleEdit(account)}
                         >
                           <FileEdit className="h-4 w-4" />
@@ -438,7 +453,7 @@ const Accounts = () => {
                       Jenis
                     </th>
                     <th className="h-12 px-4 text-right align-middle text-xs font-medium text-muted-foreground">
-                      Saldo
+                      Saldo Awal
                     </th>
                     <th className="h-12 px-4 text-center align-middle text-xs font-medium text-muted-foreground">
                       Aksi
@@ -499,6 +514,15 @@ const Accounts = () => {
                               size="sm" 
                               variant="ghost" 
                               className="h-8 w-8 p-0"
+                              onClick={() => handleViewBalance(account)}
+                              title="Lihat Saldo Terkini"
+                            >
+                              <Calculator className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
                               onClick={() => handleEdit(account)}
                             >
                               <FileEdit className="h-4 w-4" />
@@ -528,6 +552,16 @@ const Accounts = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Balance Modal */}
+      {selectedAccount && (
+        <AccountBalanceModal
+          isOpen={balanceModalOpen}
+          onClose={() => setBalanceModalOpen(false)}
+          kodeRek={selectedAccount.kode}
+          namaRek={selectedAccount.nama}
+        />
+      )}
     </Layout>
   );
 };
