@@ -41,13 +41,13 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
   const { toast } = useToast();
   const isEditMode = !!account;
 
-  // Prepare default values, ensuring parentCode is properly set
+  // Prepare default values with proper parentCode handling
   const defaultValues = account ? {
     code: account.code,
     name: account.name,
     level: account.level,
     levelType: account.levelType,
-    parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' ? account.parentCode : "-",
+    parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' && account.parentCode !== 'null' ? account.parentCode : "-",
     division: account.division,
     accountType: account.accountType,
     balance: account.balance,
@@ -75,16 +75,18 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
         name: account.name,
         level: account.level,
         levelType: account.levelType,
-        parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' ? account.parentCode : "-",
+        parentCode: account.parentCode && account.parentCode.trim() !== '' && account.parentCode !== ' ' && account.parentCode !== 'null' ? account.parentCode : "-",
         division: account.division,
         accountType: account.accountType,
         balance: account.balance,
       };
+      console.log('Setting form values:', newValues);
       form.reset(newValues);
     }
   }, [account, form]);
 
   function handleSubmit(data: AccountFormValues) {
+    console.log('Form submitted with data:', data);
     onSubmit(data);
   }
 

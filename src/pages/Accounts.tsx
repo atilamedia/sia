@@ -50,16 +50,22 @@ const Accounts = () => {
 
   const handleSubmit = async (data: AccountFormValues) => {
     try {
+      console.log('Submitting account data:', data);
+      
+      // Prepare the data with proper handling of parentCode
       const masterRekeningData: Partial<MasterRekening> = {
         kode_rek: data.code,
         nama_rek: data.name,
         saldo: data.balance,
         level: data.level,
         k_level: data.levelType,
-        rek_induk: data.parentCode === '-' ? ' ' : data.parentCode,
+        // Handle parentCode properly - convert "-" to null or empty string
+        rek_induk: data.parentCode === '-' ? null : (data.parentCode || null),
         id_div: data.division,
         jenis_rek: data.accountType
       };
+
+      console.log('Prepared data for API:', masterRekeningData);
 
       if (editingAccount) {
         await siaApi.updateMasterRekening(masterRekeningData as MasterRekening);
@@ -75,11 +81,12 @@ const Accounts = () => {
       refetch();
     } catch (error) {
       console.error('Error saving account:', error);
-      toast.error('Gagal menyimpan rekening');
+      toast.error('Gagal menyimpan rekening: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
   const handleEdit = (account: MasterRekening) => {
+    console.log('Editing account:', account);
     setEditingAccount(account);
     setIsDialogOpen(true);
   };
