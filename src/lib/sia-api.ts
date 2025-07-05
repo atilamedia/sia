@@ -1,4 +1,84 @@
+
 import { Account, CashFlow, JournalEntry, JournalType } from "./types";
+
+// Type definitions for SIA API
+export interface MasterRekening {
+  kode_rek: string;
+  nama_rek: string;
+  saldo: number;
+  level: number;
+  k_level: 'Induk' | 'Detail Kas' | 'Detail Bk' | 'Detail' | 'Sendiri';
+  rek_induk: string;
+  id_div: string;
+  jenis_rek: 'NERACA' | 'LRA' | 'LO';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface KasMasuk {
+  id_km?: string;
+  tanggal: string;
+  kode_rek: string;
+  total: number;
+  keterangan: string;
+  pembayar: string;
+  no_cek: string;
+  usernya: string;
+  id_div: string;
+  at_create?: string;
+  last_update?: string;
+  m_rekening?: {
+    kode_rek: string;
+    nama_rek: string;
+  };
+}
+
+export interface KasKeluar {
+  id_kk?: string;
+  tanggal: string;
+  bagian_seksi: string;
+  kode_rek: string;
+  total: number;
+  keterangan: string;
+  penerima: string;
+  no_cek: string;
+  usernya: string;
+  id_div: string;
+  at_create?: string;
+  last_update?: string;
+  m_rekening?: {
+    kode_rek: string;
+    nama_rek: string;
+  };
+}
+
+export interface JurnalEntry {
+  kode_rek: string;
+  deskripsi: string;
+  debit: number;
+  kredit: number;
+}
+
+export interface JurnalData {
+  tanggal: string;
+  usernya: string;
+  id_div: string;
+  id_jj: string;
+  entries: JurnalEntry[];
+}
+
+export interface AnggaranData {
+  kode_rek: string;
+  tahun: number;
+  total: number;
+  tanda: string;
+  validasi_realisasi?: string;
+  usernya?: string;
+  nama_rek?: string;
+  realisasi?: number;
+  persentase?: number;
+  status?: string;
+}
 
 class SiaApiService {
   private baseUrl = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
@@ -29,15 +109,15 @@ class SiaApiService {
     return this.request(`/kas-masuk${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createKasMasuk(data: any) {
+  async createKasMasuk(data: KasMasuk) {
     return this.request('/kas-masuk', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateKasMasuk(id: string, data: any) {
-    return this.request(`/kas-masuk/${id}`, {
+  async updateKasMasuk(data: KasMasuk) {
+    return this.request(`/kas-masuk/${data.id_km}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -58,15 +138,15 @@ class SiaApiService {
     return this.request(`/kas-keluar${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createKasKeluar(data: any) {
+  async createKasKeluar(data: KasKeluar) {
     return this.request('/kas-keluar', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateKasKeluar(id: string, data: any) {
-    return this.request(`/kas-keluar/${id}`, {
+  async updateKasKeluar(data: KasKeluar) {
+    return this.request(`/kas-keluar/${data.id_kk}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -87,7 +167,7 @@ class SiaApiService {
     return this.request(`/jurnal${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createJurnal(data: any) {
+  async createJurnal(data: JurnalData) {
     return this.request('/jurnal', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -111,21 +191,45 @@ class SiaApiService {
     return this.request('/rekening');
   }
 
-  async createRekening(data: any) {
+  async getMasterRekening() {
+    return this.request('/rekening');
+  }
+
+  async createRekening(data: MasterRekening) {
     return this.request('/rekening', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateRekening(code: string, data: any) {
+  async createMasterRekening(data: MasterRekening) {
+    return this.request('/rekening', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRekening(code: string, data: MasterRekening) {
     return this.request(`/rekening/${code}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
+  async updateMasterRekening(data: MasterRekening) {
+    return this.request(`/rekening/${data.kode_rek}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   async deleteRekening(code: string) {
+    return this.request(`/rekening/${code}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteMasterRekening(code: string) {
     return this.request(`/rekening/${code}`, {
       method: 'DELETE',
     });
