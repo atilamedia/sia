@@ -40,18 +40,30 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
   const { toast } = useToast();
   const isEditMode = !!account;
 
+  // Prepare default values, ensuring parentCode is properly set
+  const defaultValues = account ? {
+    code: account.code,
+    name: account.name,
+    level: account.level,
+    levelType: account.levelType,
+    parentCode: account.parentCode === ' ' || account.parentCode === '' ? '-' : account.parentCode,
+    division: account.division,
+    accountType: account.accountType,
+    balance: account.balance,
+  } : {
+    code: "",
+    name: "",
+    level: 1,
+    levelType: "Detail" as const,
+    parentCode: "-",
+    division: "01",
+    accountType: "NERACA" as const,
+    balance: 0,
+  };
+
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema),
-    defaultValues: account || {
-      code: "",
-      name: "",
-      level: 1,
-      levelType: "Detail",
-      parentCode: "",
-      division: "01",
-      accountType: "NERACA",
-      balance: 0,
-    },
+    defaultValues,
   });
 
   function handleSubmit(data: AccountFormValues) {
@@ -116,7 +128,7 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
                 <FormLabel>Jenis Level</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -146,7 +158,7 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
                 <FormLabel>Rekening Induk</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -174,7 +186,7 @@ export function AccountForm({ account, parentAccounts, onSubmit, onCancel }: Acc
                 <FormLabel>Tipe Rekening</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
