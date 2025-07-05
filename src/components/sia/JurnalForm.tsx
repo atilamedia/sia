@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
-import { siaApi, type MasterRekening, type JurnalData, type JurnalEntry } from "@/lib/sia-api";
+import { siaApi, type JurnalData, type JurnalEntry } from "@/lib/sia-api";
+import { AccountSelector } from "./AccountSelector";
 
 interface JurnalFormProps {
   onSuccess?: () => void;
@@ -26,22 +27,7 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
     { kode_rek: '', deskripsi: '', debit: 0, kredit: 0 }
   ]);
 
-  const [accounts, setAccounts] = useState<MasterRekening[]>([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
-  const loadAccounts = async () => {
-    try {
-      const response = await siaApi.getMasterRekening();
-      setAccounts(response.data.filter(acc => acc.k_level === 'Detail'));
-    } catch (error) {
-      console.error('Error loading accounts:', error);
-      toast.error('Gagal memuat data rekening');
-    }
-  };
 
   const addEntry = () => {
     setEntries([...entries, { kode_rek: '', deskripsi: '', debit: 0, kredit: 0 }]);
@@ -189,21 +175,12 @@ export function JurnalForm({ onSuccess }: JurnalFormProps) {
                   <CardContent className="space-y-4">
                     <div>
                       <Label htmlFor={`account-${index}`}>Kode Rekening</Label>
-                      <Select 
-                        value={entry.kode_rek} 
+                      <AccountSelector
+                        value={entry.kode_rek}
                         onValueChange={(value) => updateEntry(index, 'kode_rek', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih rekening" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accounts.map((account) => (
-                            <SelectItem key={account.kode_rek} value={account.kode_rek}>
-                              {account.kode_rek} - {account.nama_rek}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Pilih rekening"
+                        filterType="all"
+                      />
                     </div>
 
                     <div>
