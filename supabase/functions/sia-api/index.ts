@@ -24,6 +24,202 @@ serve(async (req) => {
 
     console.log(`${method} ${path}`)
 
+    // Rekening endpoints
+    if (path === '/rekening') {
+      if (method === 'GET') {
+        const { data, error } = await supabaseClient
+          .from('m_rekening')
+          .select('*')
+          .order('kode_rek', { ascending: true })
+
+        if (error) {
+          console.error('Error fetching rekening:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'POST') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('m_rekening')
+          .insert(body)
+          .select()
+
+        if (error) {
+          console.error('Error creating rekening:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // Handle rekening update and delete with path parameters
+    const rekeningMatch = path.match(/^\/rekening\/(.+)$/)
+    if (rekeningMatch) {
+      const kodeRek = rekeningMatch[1]
+
+      if (method === 'PUT') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('m_rekening')
+          .update(body)
+          .eq('kode_rek', kodeRek)
+          .select()
+
+        if (error) {
+          console.error('Error updating rekening:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'DELETE') {
+        const { data, error } = await supabaseClient
+          .from('m_rekening')
+          .delete()
+          .eq('kode_rek', kodeRek)
+          .select()
+
+        if (error) {
+          console.error('Error deleting rekening:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // Anggaran endpoints
+    if (path === '/anggaran') {
+      if (method === 'GET') {
+        const tahun = url.searchParams.get('tahun')
+        
+        let query = supabaseClient
+          .from('anggaran')
+          .select(`
+            *,
+            m_rekening:kode_rek (
+              kode_rek,
+              nama_rek,
+              jenis_rek
+            )
+          `)
+          .order('kode_rek', { ascending: true })
+
+        if (tahun) {
+          query = query.eq('tahun', parseInt(tahun))
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          console.error('Error fetching anggaran:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'POST') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('anggaran')
+          .insert(body)
+          .select()
+
+        if (error) {
+          console.error('Error creating anggaran:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // Handle anggaran update and delete with path parameters
+    const anggaranMatch = path.match(/^\/anggaran\/([^\/]+)\/(\d+)$/)
+    if (anggaranMatch) {
+      const kodeRek = anggaranMatch[1]
+      const tahun = parseInt(anggaranMatch[2])
+
+      if (method === 'PUT') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('anggaran')
+          .update(body)
+          .eq('kode_rek', kodeRek)
+          .eq('tahun', tahun)
+          .select()
+
+        if (error) {
+          console.error('Error updating anggaran:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'DELETE') {
+        const { data, error } = await supabaseClient
+          .from('anggaran')
+          .delete()
+          .eq('kode_rek', kodeRek)
+          .eq('tahun', tahun)
+          .select()
+
+        if (error) {
+          console.error('Error deleting anggaran:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
     // Kas Masuk endpoints
     if (path === '/kas-masuk') {
       if (method === 'GET') {
@@ -132,202 +328,6 @@ serve(async (req) => {
 
         if (error) {
           console.error('Error creating kas keluar:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-    }
-
-    // Rekening endpoints - ADD THIS MISSING ENDPOINT
-    if (path === '/rekening') {
-      if (method === 'GET') {
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .select('*')
-          .order('kode_rek', { ascending: true })
-
-        if (error) {
-          console.error('Error fetching rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (method === 'POST') {
-        const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .insert(body)
-          .select()
-
-        if (error) {
-          console.error('Error creating rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (method === 'PUT') {
-        const pathParts = path.split('/')
-        const kodeRek = pathParts[2]
-        const body = await req.json()
-        
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .update(body)
-          .eq('kode_rek', kodeRek)
-          .select()
-
-        if (error) {
-          console.error('Error updating rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (method === 'DELETE') {
-        const pathParts = path.split('/')
-        const kodeRek = pathParts[2]
-        
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .delete()
-          .eq('kode_rek', kodeRek)
-          .select()
-
-        if (error) {
-          console.error('Error deleting rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-    }
-
-    // Anggaran endpoints - ADD THIS MISSING ENDPOINT
-    if (path === '/anggaran') {
-      if (method === 'GET') {
-        const tahun = url.searchParams.get('tahun')
-        
-        let query = supabaseClient
-          .from('anggaran')
-          .select(`
-            *,
-            m_rekening:kode_rek (
-              kode_rek,
-              nama_rek,
-              jenis_rek
-            )
-          `)
-          .order('kode_rek', { ascending: true })
-
-        if (tahun) {
-          query = query.eq('tahun', parseInt(tahun))
-        }
-
-        const { data, error } = await query
-
-        if (error) {
-          console.error('Error fetching anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (method === 'POST') {
-        const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .insert(body)
-          .select()
-
-        if (error) {
-          console.error('Error creating anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-    }
-
-    // Handle anggaran update and delete with path parameters
-    const anggaranMatch = path.match(/^\/anggaran\/([^\/]+)\/(\d+)$/)
-    if (anggaranMatch) {
-      const kodeRek = anggaranMatch[1]
-      const tahun = parseInt(anggaranMatch[2])
-
-      if (method === 'PUT') {
-        const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .update(body)
-          .eq('kode_rek', kodeRek)
-          .eq('tahun', tahun)
-          .select()
-
-        if (error) {
-          console.error('Error updating anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-
-      if (method === 'DELETE') {
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .delete()
-          .eq('kode_rek', kodeRek)
-          .eq('tahun', tahun)
-          .select()
-
-        if (error) {
-          console.error('Error deleting anggaran:', error)
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
