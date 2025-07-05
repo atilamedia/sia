@@ -1,10 +1,12 @@
 
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 }
 
 serve(async (req) => {
@@ -103,9 +105,18 @@ serve(async (req) => {
     // Handle rekening update and delete with path parameters
     const rekeningMatch = path.match(/^\/rekening\/(.+)$/)
     if (rekeningMatch) {
-      // Use decodeURIComponent twice to handle double encoding
-      let kodeRek = decodeURIComponent(decodeURIComponent(rekeningMatch[1]))
-      console.log(`Handling rekening operation for code: ${kodeRek}`)
+      // Decode the kode_rek parameter properly
+      let kodeRek = rekeningMatch[1]
+      
+      // Handle URL encoding properly
+      try {
+        kodeRek = decodeURIComponent(kodeRek)
+      } catch (e) {
+        console.log('First decode failed, trying again:', e)
+        // If first decode fails, use as is
+      }
+      
+      console.log(`Handling rekening operation for code: "${kodeRek}"`)
 
       if (method === 'PUT') {
         try {
@@ -141,6 +152,17 @@ serve(async (req) => {
               code: error.code
             }), {
               status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
+          if (!data || data.length === 0) {
+            console.log('No rows were updated, kode_rek might not exist:', kodeRek)
+            return new Response(JSON.stringify({ 
+              error: 'Record not found',
+              message: `No record found with kode_rek: ${kodeRek}`
+            }), {
+              status: 404,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
           }
@@ -182,6 +204,17 @@ serve(async (req) => {
               code: error.code
             }), {
               status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
+          if (!data || data.length === 0) {
+            console.log('No rows were deleted, kode_rek might not exist:', kodeRek)
+            return new Response(JSON.stringify({ 
+              error: 'Record not found',
+              message: `No record found with kode_rek: ${kodeRek}`
+            }), {
+              status: 404,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
           }
@@ -641,3 +674,4 @@ serve(async (req) => {
     })
   }
 })
+

@@ -1,4 +1,3 @@
-
 import { Account, CashFlow, JournalEntry, JournalType } from "./types";
 
 // Type definitions for SIA API
@@ -84,7 +83,10 @@ class SiaApiService {
   private baseUrl = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
 
   private async request(endpoint: string, options?: RequestInit) {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log('Making request to:', url);
+    
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdmh6dXFsc2l3dWR5Z3d3aGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1Mzg0MTcsImV4cCI6MjA2NzExNDQxN30.uxBK0gLaodF7CcFaZBuqloI9OJAdZJ_TA5c3iylF-eo`,
@@ -93,8 +95,16 @@ class SiaApiService {
       ...options,
     });
     
+    console.log('Response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Request failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
     
     return response.json();
@@ -210,27 +220,43 @@ class SiaApiService {
   }
 
   async updateRekening(code: string, data: MasterRekening) {
-    return this.request(`/rekening/${code}`, {
+    // Ensure proper URL encoding
+    const encodedCode = encodeURIComponent(code);
+    console.log('Updating rekening with code:', code, 'encoded as:', encodedCode);
+    
+    return this.request(`/rekening/${encodedCode}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async updateMasterRekening(data: MasterRekening) {
-    return this.request(`/rekening/${data.kode_rek}`, {
+    // Ensure proper URL encoding
+    const encodedCode = encodeURIComponent(data.kode_rek);
+    console.log('Updating master rekening with code:', data.kode_rek, 'encoded as:', encodedCode);
+    
+    return this.request(`/rekening/${encodedCode}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteRekening(code: string) {
-    return this.request(`/rekening/${code}`, {
+    // Ensure proper URL encoding
+    const encodedCode = encodeURIComponent(code);
+    console.log('Deleting rekening with code:', code, 'encoded as:', encodedCode);
+    
+    return this.request(`/rekening/${encodedCode}`, {
       method: 'DELETE',
     });
   }
 
   async deleteMasterRekening(code: string) {
-    return this.request(`/rekening/${code}`, {
+    // Ensure proper URL encoding
+    const encodedCode = encodeURIComponent(code);
+    console.log('Deleting master rekening with code:', code, 'encoded as:', encodedCode);
+    
+    return this.request(`/rekening/${encodedCode}`, {
       method: 'DELETE',
     });
   }
