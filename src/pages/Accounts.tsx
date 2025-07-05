@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi, type MasterRekening } from "@/lib/sia-api";
 import { toast } from "sonner";
-import { Search, Plus, FileEdit, Trash2, Download, Wallet, Calculator } from "lucide-react";
+import { Search, Plus, FileEdit, Trash2, Calculator } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AccountBalanceModal } from "@/components/accounts/AccountBalanceModal";
 import { AccountForm, type AccountFormValues } from "@/components/accounts/AccountForm";
+import { AccountExport } from "@/components/accounts/AccountExport";
 import { Account } from "@/lib/types";
 
 const Accounts = () => {
@@ -103,28 +103,6 @@ const Accounts = () => {
     setBalanceModalOpen(true);
   };
 
-  const exportData = () => {
-    const csvContent = [
-      ['Kode Rekening', 'Nama Rekening', 'Saldo', 'Level', 'K-Level', 'Rekening Induk', 'Jenis'],
-      ...filteredAccounts.map(account => [
-        account.kode_rek,
-        account.nama_rek,
-        account.saldo,
-        account.level,
-        account.k_level,
-        account.rek_induk,
-        account.jenis_rek
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `master-rekening-${Date.now()}.csv`;
-    a.click();
-  };
-
   const totalSaldo = filteredAccounts.reduce((sum, account) => sum + (account.saldo || 0), 0);
   const totalRekening = filteredAccounts.length;
   const rekeningNeraca = filteredAccounts.filter(acc => acc.jenis_rek === 'NERACA').length;
@@ -150,7 +128,7 @@ const Accounts = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Rekening</CardTitle>
-              <Wallet className="h-4 w-4 text-muted-foreground" />
+              <Calculator className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold">{totalRekening}</div>
@@ -163,7 +141,7 @@ const Accounts = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Saldo Awal</CardTitle>
-              <Wallet className="h-4 w-4 text-blue-600" />
+              <Calculator className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold text-blue-600">
@@ -182,7 +160,7 @@ const Accounts = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rekening Neraca</CardTitle>
-              <Wallet className="h-4 w-4 text-green-600" />
+              <Calculator className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold text-green-600">{rekeningNeraca}</div>
@@ -195,7 +173,7 @@ const Accounts = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Rekening LRA</CardTitle>
-              <Wallet className="h-4 w-4 text-purple-600" />
+              <Calculator className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-xl md:text-2xl font-bold text-purple-600">{rekeningLRA}</div>
@@ -223,10 +201,7 @@ const Accounts = () => {
                   />
                 </div>
                 <div className="flex space-x-2">
-                  <Button onClick={exportData} variant="outline" size="sm" className="flex-1 sm:flex-none">
-                    <Download className="mr-2 h-4 w-4" />
-                    <span className="hidden sm:inline">Export</span>
-                  </Button>
+                  <AccountExport accounts={filteredAccounts} searchTerm={searchTerm} />
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                       <Button onClick={() => {
