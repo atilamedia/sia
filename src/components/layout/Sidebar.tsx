@@ -30,7 +30,7 @@ const navigation = [
   { name: "Buku Kas Umum", href: "/buku-kas-umum", icon: Book },
   { name: "Anggaran", href: "/anggaran", icon: PiggyBank },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
-  { name: "LRA", href: "/laporan-realisasi-anggaran", icon: Calculator },
+  { name: "Laporan Realisasi Anggaran", href: "/laporan-realisasi-anggaran", icon: Calculator },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Akun Rekening", href: "/accounts", icon: Users },
 ];
