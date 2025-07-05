@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { siaApi } from "@/lib/sia-api";
 import { Download, Filter, TrendingUp, TrendingDown } from "lucide-react";
-import { useToast } = from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LaporanRealisasiAnggaran() {
   const [lraData, setLraData] = useState<any[]>([]);
@@ -246,7 +245,7 @@ export default function LaporanRealisasiAnggaran() {
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
                           Over Budget
                         </span>
-                      ) : item.persentage >= 80 ? (
+                      ) : item.persentase >= 80 ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
                           Warning
                         </span>
