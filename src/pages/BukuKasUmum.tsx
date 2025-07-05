@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Download, FileText, FileExcel } from "lucide-react";
+import { Calendar, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,7 +110,7 @@ export default function BukuKasUmum() {
             {/* Export Buttons */}
             <div className="flex gap-2">
               <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
-                <FileExcel className="h-4 w-4" />
+                <FileSpreadsheet className="h-4 w-4" />
                 Excel
               </Button>
               <Button onClick={handleExportPDF} className="flex items-center gap-2">
