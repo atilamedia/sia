@@ -1,16 +1,17 @@
+
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { siaApi, type MasterRekening } from "@/lib/sia-api";
 import { toast } from "sonner";
 import { Search, Plus, FileEdit, Trash2, Download, Wallet, Calculator } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AccountBalanceModal } from "@/components/accounts/AccountBalanceModal";
+import { AccountForm, type AccountFormValues } from "@/components/accounts/AccountForm";
+import { Account } from "@/lib/types";
 
 const Accounts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,16 +20,6 @@ const Accounts = () => {
   const [editingAccount, setEditingAccount] = useState<MasterRekening | null>(null);
   const [balanceModalOpen, setBalanceModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<{ kode: string; nama: string } | null>(null);
-  const [formData, setFormData] = useState<Partial<MasterRekening>>({
-    kode_rek: '',
-    nama_rek: '',
-    saldo: 0,
-    level: 1,
-    k_level: 'Induk',
-    rek_induk: ' ',
-    id_div: '01',
-    jenis_rek: 'NERACA'
-  });
 
   const { data: accountsData, isLoading, refetch } = useQuery({
     queryKey: ['master-rekening', refreshTrigger],
@@ -40,29 +31,44 @@ const Accounts = () => {
     account.nama_rek?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Convert MasterRekening to Account format and get parent accounts
+  const convertedAccounts: Account[] = filteredAccounts.map(acc => ({
+    code: acc.kode_rek,
+    name: acc.nama_rek || '',
+    balance: acc.saldo || 0,
+    level: acc.level || 1,
+    levelType: acc.k_level || 'Detail',
+    parentCode: acc.rek_induk || '',
+    division: acc.id_div || '01',
+    accountType: acc.jenis_rek || 'NERACA'
+  }));
+
+  // Get potential parent accounts (excluding the account being edited)
+  const parentAccounts = convertedAccounts.filter(acc => 
+    acc.code !== editingAccount?.kode_rek
+  );
+
+  const handleSubmit = async (data: AccountFormValues) => {
     try {
+      const masterRekeningData: Partial<MasterRekening> = {
+        kode_rek: data.code,
+        nama_rek: data.name,
+        saldo: data.balance,
+        level: data.level,
+        k_level: data.levelType,
+        rek_induk: data.parentCode === '-' ? ' ' : data.parentCode,
+        id_div: data.division,
+        jenis_rek: data.accountType
+      };
+
       if (editingAccount) {
-        await siaApi.updateMasterRekening(formData as MasterRekening);
+        await siaApi.updateMasterRekening(masterRekeningData as MasterRekening);
         toast.success('Rekening berhasil diupdate');
       } else {
-        await siaApi.createMasterRekening(formData as Omit<MasterRekening, 'created_at' | 'updated_at'>);
+        await siaApi.createMasterRekening(masterRekeningData as Omit<MasterRekening, 'created_at' | 'updated_at'>);
         toast.success('Rekening berhasil ditambahkan');
       }
       
-      // Reset form
-      setFormData({
-        kode_rek: '',
-        nama_rek: '',
-        saldo: 0,
-        level: 1,
-        k_level: 'Induk',
-        rek_induk: ' ',
-        id_div: '01',
-        jenis_rek: 'NERACA'
-      });
       setEditingAccount(null);
       setIsDialogOpen(false);
       setRefreshTrigger(prev => prev + 1);
@@ -75,7 +81,6 @@ const Accounts = () => {
 
   const handleEdit = (account: MasterRekening) => {
     setEditingAccount(account);
-    setFormData(account);
     setIsDialogOpen(true);
   };
 
@@ -124,6 +129,18 @@ const Accounts = () => {
   const totalRekening = filteredAccounts.length;
   const rekeningNeraca = filteredAccounts.filter(acc => acc.jenis_rek === 'NERACA').length;
   const rekeningLRA = filteredAccounts.filter(acc => acc.jenis_rek === 'LRA').length;
+
+  // Convert editing account to Account format
+  const editingAccountConverted: Account | undefined = editingAccount ? {
+    code: editingAccount.kode_rek,
+    name: editingAccount.nama_rek || '',
+    balance: editingAccount.saldo || 0,
+    level: editingAccount.level || 1,
+    levelType: editingAccount.k_level || 'Detail',
+    parentCode: editingAccount.rek_induk || '',
+    division: editingAccount.id_div || '01',
+    accountType: editingAccount.jenis_rek || 'NERACA'
+  } : undefined;
 
   return (
     <Layout title="Rekening">
@@ -214,23 +231,13 @@ const Accounts = () => {
                     <DialogTrigger asChild>
                       <Button onClick={() => {
                         setEditingAccount(null);
-                        setFormData({
-                          kode_rek: '',
-                          nama_rek: '',
-                          saldo: 0,
-                          level: 1,
-                          k_level: 'Induk',
-                          rek_induk: ' ',
-                          id_div: '01',
-                          jenis_rek: 'NERACA'
-                        });
                       }} size="sm" className="flex-1 sm:flex-none">
                         <Plus className="mr-2 h-4 w-4" />
                         <span className="hidden sm:inline">Tambah</span>
                         <span className="sm:hidden">+</span>
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[90vw] md:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                    <DialogContent className="sm:max-w-[90vw] md:max-w-[600px] max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-base md:text-lg">
                           {editingAccount ? 'Edit Rekening' : 'Tambah Rekening Baru'}
@@ -239,106 +246,13 @@ const Accounts = () => {
                           Isi detail rekening untuk {editingAccount ? 'mengupdate' : 'menambahkan'} ke master rekening
                         </DialogDescription>
                       </DialogHeader>
-                      <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="kode_rek" className="text-sm">Kode Rekening</Label>
-                            <Input
-                              id="kode_rek"
-                              value={formData.kode_rek}
-                              onChange={(e) => setFormData({...formData, kode_rek: e.target.value})}
-                              required
-                              className="text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="level" className="text-sm">Level</Label>
-                            <Input
-                              id="level"
-                              type="number"
-                              min="1"
-                              value={formData.level}
-                              onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
-                              required
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="nama_rek" className="text-sm">Nama Rekening</Label>
-                          <Input
-                            id="nama_rek"
-                            value={formData.nama_rek}
-                            onChange={(e) => setFormData({...formData, nama_rek: e.target.value})}
-                            required
-                            className="text-sm"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="saldo" className="text-sm">Saldo</Label>
-                            <Input
-                              id="saldo"
-                              type="number"
-                              step="0.01"
-                              value={formData.saldo}
-                              onChange={(e) => setFormData({...formData, saldo: parseFloat(e.target.value) || 0})}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="rek_induk" className="text-sm">Rekening Induk</Label>
-                            <Input
-                              id="rek_induk"
-                              value={formData.rek_induk}
-                              onChange={(e) => setFormData({...formData, rek_induk: e.target.value})}
-                              className="text-sm"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="k_level" className="text-sm">Kategori Level</Label>
-                            <Select value={formData.k_level} onValueChange={(value) => setFormData({...formData, k_level: value as any})}>
-                              <SelectTrigger className="text-sm">
-                                <SelectValue placeholder="Pilih kategori level" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Induk">Induk</SelectItem>
-                                <SelectItem value="Detail Kas">Detail Kas</SelectItem>
-                                <SelectItem value="Detail Bk">Detail Bank</SelectItem>
-                                <SelectItem value="Detail">Detail</SelectItem>
-                                <SelectItem value="Sendiri">Sendiri</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="jenis_rek" className="text-sm">Jenis Rekening</Label>
-                            <Select value={formData.jenis_rek} onValueChange={(value) => setFormData({...formData, jenis_rek: value as any})}>
-                              <SelectTrigger className="text-sm">
-                                <SelectValue placeholder="Pilih jenis rekening" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="NERACA">NERACA</SelectItem>
-                                <SelectItem value="LRA">LRA</SelectItem>
-                                <SelectItem value="LO">LO</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <DialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                          <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
-                            Batal
-                          </Button>
-                          <Button type="submit" className="w-full sm:w-auto">
-                            {editingAccount ? 'Update' : 'Simpan'}
-                          </Button>
-                        </DialogFooter>
-                      </form>
+                      
+                      <AccountForm
+                        account={editingAccountConverted}
+                        parentAccounts={parentAccounts}
+                        onSubmit={handleSubmit}
+                        onCancel={() => setIsDialogOpen(false)}
+                      />
                     </DialogContent>
                   </Dialog>
                 </div>
