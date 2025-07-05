@@ -29,16 +29,21 @@ export function AnggaranModal({ isOpen, onClose, tahun, editData, mode }: Anggar
   const queryClient = useQueryClient();
 
   // Query untuk mengambil data rekening
-  const { data: rekeningData } = useQuery({
+  const { data: rekeningData, isLoading: loadingRekening, error: rekeningError } = useQuery({
     queryKey: ['rekening'],
     queryFn: async () => {
+      console.log('Fetching rekening data...');
       const response = await siaApi.getMasterRekening();
+      console.log('Rekening data response:', response);
       return response;
     },
-    enabled: mode === 'create'
+    enabled: mode === 'create',
+    retry: 3,
+    retryDelay: 1000
   });
 
   const rekening: MasterRekening[] = rekeningData?.data || [];
+  console.log('Available rekening:', rekening);
 
   const createMutation = useMutation({
     mutationFn: async (data: AnggaranData) => {
@@ -120,18 +125,32 @@ export function AnggaranModal({ isOpen, onClose, tahun, editData, mode }: Anggar
           {mode === 'create' && (
             <div className="space-y-2">
               <Label htmlFor="kode_rek">Rekening</Label>
-              <Select value={formData.kode_rek} onValueChange={(value) => setFormData(prev => ({ ...prev, kode_rek: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih rekening..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {rekening.map((rek) => (
-                    <SelectItem key={rek.kode_rek} value={rek.kode_rek}>
-                      {rek.kode_rek} - {rek.nama_rek}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loadingRekening ? (
+                <div className="flex items-center justify-center py-2">
+                  <div className="text-sm text-gray-500">Memuat data rekening...</div>
+                </div>
+              ) : rekeningError ? (
+                <div className="text-sm text-red-500">
+                  Error loading rekening: {rekeningError.message}
+                </div>
+              ) : rekening.length === 0 ? (
+                <div className="text-sm text-gray-500">
+                  Tidak ada data rekening tersedia
+                </div>
+              ) : (
+                <Select value={formData.kode_rek} onValueChange={(value) => setFormData(prev => ({ ...prev, kode_rek: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih rekening..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rekening.map((rek) => (
+                      <SelectItem key={rek.kode_rek} value={rek.kode_rek}>
+                        {rek.kode_rek} - {rek.nama_rek}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           )}
 
@@ -176,7 +195,7 @@ export function AnggaranModal({ isOpen, onClose, tahun, editData, mode }: Anggar
             </Button>
             <Button 
               type="submit" 
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={createMutation.isPending || updateMutation.isPending || (mode === 'create' && loadingRekening)}
             >
               {(createMutation.isPending || updateMutation.isPending) ? 'Menyimpan...' : 
                (mode === 'create' ? 'Tambah' : 'Update')}
