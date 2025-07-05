@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Book
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const navigation = [
   { name: "Kas Masuk", href: "/cash-in", icon: TrendingUp },
   { name: "Kas Keluar", href: "/cash-out", icon: TrendingDown },
   { name: "Jurnal Umum", href: "/journal", icon: BookOpen },
+  { name: "Buku Kas Umum", href: "/buku-kas-umum", icon: Book },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Akun Rekening", href: "/accounts", icon: Users },

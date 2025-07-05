@@ -12,6 +12,7 @@ import Journal from "./pages/Journal";
 import NotFound from "./pages/NotFound";
 import Accounts from "./pages/Accounts";
 import Reports from "./pages/Reports";
+import BukuKasUmum from "./pages/BukuKasUmum";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/journal" element={<Journal />} />
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/buku-kas-umum" element={<BukuKasUmum />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
