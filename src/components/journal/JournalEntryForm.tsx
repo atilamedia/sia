@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { JournalEntry, JournalType } from "@/lib/types";
 import { formatDate, generateId } from "@/lib/utils";
-import { siaApi, type MasterRekening } from "@/lib/sia-api";
+import { AccountSelector } from "../sia/AccountSelector";
 
 interface JournalEntryFormProps {
   isOpen: boolean;
@@ -31,33 +32,12 @@ export function JournalEntryForm({
   const [entries, setEntries] = useState<Array<{ accountCode: string; description: string; debit: number; credit: number }>>([
     { accountCode: "", description: "", debit: 0, credit: 0 }
   ]);
-  const [accounts, setAccounts] = useState<MasterRekening[]>([]);
-
-  // Load accounts from API
-  useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        const response = await siaApi.getMasterRekening();
-        // Filter only detail accounts
-        const detailAccounts = response.data.filter(acc => acc.k_level === 'Detail');
-        setAccounts(detailAccounts);
-        console.log('Loaded detail accounts:', detailAccounts);
-      } catch (error) {
-        console.error('Error loading accounts:', error);
-      }
-    };
-
-    if (isOpen) {
-      loadAccounts();
-    }
-  }, [isOpen]);
 
   // Initialize form data when modal opens or initialEntries change
   useEffect(() => {
     if (isOpen) {
-      if (initialEntries && initialEntries.length > 0 && accounts.length > 0) {
+      if (initialEntries && initialEntries.length > 0) {
         console.log('Loading initial entries:', initialEntries);
-        console.log('Available accounts:', accounts);
         
         // Set journal header data from first entry
         const firstEntry = initialEntries[0];
@@ -91,7 +71,7 @@ export function JournalEntryForm({
         setEntries([{ accountCode: "", description: "", debit: 0, credit: 0 }]);
       }
     }
-  }, [isOpen, initialEntries, journalTypes, accounts]);
+  }, [isOpen, initialEntries, journalTypes]);
 
   const addEntry = () => {
     setEntries([...entries, { accountCode: "", description: "", debit: 0, credit: 0 }]);
@@ -201,21 +181,12 @@ export function JournalEntryForm({
                 <div key={index} className="grid grid-cols-12 gap-2 items-start">
                   <div className="col-span-3">
                     <Label htmlFor={`account-${index}`}>Kode Akun</Label>
-                    <Select
+                    <AccountSelector
                       value={entry.accountCode}
                       onValueChange={(value) => updateEntry(index, "accountCode", value)}
-                    >
-                      <SelectTrigger id={`account-${index}`}>
-                        <SelectValue placeholder="Pilih akun" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((account) => (
-                          <SelectItem key={account.kode_rek} value={account.kode_rek}>
-                            {account.kode_rek} - {account.nama_rek}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Pilih akun"
+                      filterType="all"
+                    />
                   </div>
                   
                   <div className="col-span-3">
