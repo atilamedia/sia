@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -21,9 +20,11 @@ serve(async (req) => {
     const url = new URL(req.url)
     let path = url.pathname
     
-    // Remove the /functions/v1/sia-api prefix if it exists
+    // Remove various possible prefixes
     if (path.startsWith('/functions/v1/sia-api')) {
       path = path.replace('/functions/v1/sia-api', '')
+    } else if (path.startsWith('/sia-api')) {
+      path = path.replace('/sia-api', '')
     }
     
     // Ensure path starts with / if not empty
@@ -31,9 +32,14 @@ serve(async (req) => {
       path = '/' + path
     }
     
+    // Handle empty path
+    if (!path) {
+      path = '/'
+    }
+    
     const method = req.method
 
-    console.log(`Processing ${method} ${path} from ${url.pathname}`)
+    console.log(`Processing ${method} ${path} from original ${url.pathname}`)
 
     // Handle root path
     if (path === '' || path === '/') {
@@ -553,7 +559,7 @@ serve(async (req) => {
     }
 
     // Return 404 for unknown endpoints
-    console.log(`Unknown endpoint: ${path}`)
+    console.log(`Unknown endpoint: ${path}, original: ${url.pathname}`)
     return new Response(JSON.stringify({ error: 'Endpoint not found', path, originalPath: url.pathname }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
