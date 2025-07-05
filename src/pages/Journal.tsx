@@ -279,7 +279,7 @@ const Journal = () => {
   };
 
   return (
-    <Layout title="Jurnal">
+    <Layout title="Jurnal Umum">
       <div className="space-y-4 md:space-y-6">
         {/* Form and Summary Section - Stack on mobile */}
         <div className={isMobile ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-2 gap-6"}>
