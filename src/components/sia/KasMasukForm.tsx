@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { siaApi, type MasterRekening, type KasMasuk } from "@/lib/sia-api";
+import { siaApi, type KasMasuk } from "@/lib/sia-api";
+import { AccountSelector } from "./AccountSelector";
 
 interface KasMasukFormProps {
   onSuccess?: () => void;
@@ -27,13 +27,8 @@ export function KasMasukForm({ onSuccess, editData, onCancel }: KasMasukFormProp
     id_div: '01'
   });
 
-  const [accounts, setAccounts] = useState<MasterRekening[]>([]);
   const [loading, setLoading] = useState(false);
   const isEditing = !!editData;
-
-  useEffect(() => {
-    loadAccounts();
-  }, []);
 
   useEffect(() => {
     if (editData) {
@@ -43,16 +38,6 @@ export function KasMasukForm({ onSuccess, editData, onCancel }: KasMasukFormProp
       });
     }
   }, [editData]);
-
-  const loadAccounts = async () => {
-    try {
-      const response = await siaApi.getMasterRekening();
-      setAccounts(response.data.filter(acc => acc.k_level === 'Detail Kas' || acc.k_level === 'Detail Bk'));
-    } catch (error) {
-      console.error('Error loading accounts:', error);
-      toast.error('Gagal memuat data rekening');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,18 +121,12 @@ export function KasMasukForm({ onSuccess, editData, onCancel }: KasMasukFormProp
 
             <div>
               <Label htmlFor="kode_rek">Rekening Kas</Label>
-              <Select value={formData.kode_rek} onValueChange={(value) => handleInputChange('kode_rek', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih rekening kas" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((account) => (
-                    <SelectItem key={account.kode_rek} value={account.kode_rek}>
-                      {account.kode_rek} - {account.nama_rek}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <AccountSelector
+                value={formData.kode_rek}
+                onValueChange={(value) => handleInputChange('kode_rek', value)}
+                placeholder="Pilih rekening kas"
+                filterType="all"
+              />
             </div>
 
             <div>
