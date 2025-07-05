@@ -29,7 +29,7 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
 
   return (
     <div className="min-h-screen flex w-full">
-      <Sidebar onToggle={setSidebarCollapsed} />
+      <Sidebar />
       <div className={cn(
         "flex-1 flex flex-col transition-all duration-300 ease-linear",
         isMobile 

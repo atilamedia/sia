@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,8 +85,8 @@ export default function BukuKasUmum() {
               <div className="space-y-2">
                 <Label>Periode</Label>
                 <DateRangePicker
-                  date={dateRange}
-                  onDateChange={setDateRange}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                 />
               </div>
               <Button onClick={handleFilter} disabled={loading}>

@@ -144,8 +144,8 @@ export default function LaporanRealisasiAnggaran() {
               <div className="space-y-2">
                 <Label>Periode</Label>
                 <DateRangePicker
-                  date={dateRange}
-                  onDateChange={setDateRange}
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
                 />
               </div>
               <Button onClick={handleFilter} disabled={loading}>
