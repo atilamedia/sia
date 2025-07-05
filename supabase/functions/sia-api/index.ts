@@ -8,11 +8,14 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Always handle OPTIONS requests first
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    console.log(`Incoming request: ${req.method} ${req.url}`)
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -105,36 +108,55 @@ serve(async (req) => {
 
       if (method === 'PUT') {
         const body = await req.json()
-        console.log('Updating rekening with data:', body)
+        console.log('Raw request body:', JSON.stringify(body, null, 2))
         console.log('Updating rekening with code:', kodeRek)
         
-        // Clean up the data before updating
+        // Clean up the data before updating - handle rek_induk properly
         const cleanedData = {
-          ...body,
-          // Ensure rek_induk is properly handled
-          rek_induk: body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' ? null : body.rek_induk
+          ...body
         }
         
-        console.log('Cleaned data for update:', cleanedData)
+        // Handle rek_induk field properly
+        if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null') {
+          cleanedData.rek_induk = null
+        }
         
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .update(cleanedData)
-          .eq('kode_rek', kodeRek)
-          .select()
+        console.log('Cleaned data for update:', JSON.stringify(cleanedData, null, 2))
+        
+        try {
+          const { data, error } = await supabaseClient
+            .from('m_rekening')
+            .update(cleanedData)
+            .eq('kode_rek', kodeRek)
+            .select()
 
-        if (error) {
-          console.error('Error updating rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
+          if (error) {
+            console.error('Database error updating rekening:', error)
+            return new Response(JSON.stringify({ 
+              error: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
+          console.log('Successfully updated rekening:', data)
+          return new Response(JSON.stringify({ data }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        } catch (updateError) {
+          console.error('Caught error during update:', updateError)
+          return new Response(JSON.stringify({ 
+            error: 'Update failed',
+            message: updateError.message || 'Unknown error'
+          }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-
-        console.log('Successfully updated rekening:', data)
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
       }
 
       if (method === 'DELETE') {
@@ -585,8 +607,12 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Unhandled error:', error)
-    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
+    console.error('Unhandled error in edge function:', error)
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error',
+      message: error.message || 'Unknown error',
+      stack: error.stack || 'No stack trace'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
