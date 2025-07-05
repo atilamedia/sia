@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Download, FileText, FileSpreadsheet } from "lucide-react";
@@ -13,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
+import * as XLSX from 'xlsx';
 
 export default function BukuKasUmum() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -78,12 +78,240 @@ export default function BukuKasUmum() {
 
   const isLoading = loadingKasMasuk || loadingKasKeluar;
 
-  const handleExportPDF = () => {
-    toast.success("Ekspor PDF berhasil!");
+  const handleExportExcel = () => {
+    try {
+      const workbook = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ['BUKU KAS UMUM'],
+        [''],
+        ['Periode:', dateRange?.from && dateRange?.to ? 
+          `${format(dateRange.from, 'dd MMMM yyyy', { locale: id })} - ${format(dateRange.to, 'dd MMMM yyyy', { locale: id })}` : 
+          'Semua Periode'],
+        [''],
+        ['RINGKASAN'],
+        ['Total Penerimaan:', `Rp ${totalDebit.toLocaleString('id-ID')}`],
+        ['Total Pengeluaran:', `Rp ${totalKredit.toLocaleString('id-ID')}`],
+        ['Saldo Akhir:', `Rp ${saldoAkhir.toLocaleString('id-ID')}`],
+        ['Total Transaksi:', allTransactions.length],
+        [''],
+        ['Tanggal Cetak:', new Date().toLocaleString('id-ID')]
+      ];
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+
+      // Detail sheet
+      if (transactionsWithBalance.length > 0) {
+        const detailData = transactionsWithBalance.map(transaction => ({
+          'Tanggal': format(new Date(transaction.tanggal), 'dd/MM/yyyy'),
+          'Keterangan': transaction.keterangan,
+          'Rekening': transaction.nama_rek,
+          'Pihak': transaction.pihak,
+          'Debit': transaction.debit > 0 ? transaction.debit : '',
+          'Kredit': transaction.kredit > 0 ? transaction.kredit : '',
+          'Saldo': transaction.saldo,
+          'Jenis': transaction.type === 'masuk' ? 'Masuk' : 'Keluar'
+        }));
+        
+        const detailSheet = XLSX.utils.json_to_sheet(detailData);
+        XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Transaksi');
+      }
+
+      const fileName = `buku-kas-umum-${Date.now()}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      toast.success("Excel berhasil diunduh!");
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error("Gagal mengekspor Excel");
+    }
   };
 
-  const handleExportExcel = () => {
-    toast.success("Ekspor Excel berhasil!");
+  const handleExportPDF = () => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error("Gagal membuka jendela cetak. Pastikan popup tidak diblokir.");
+        return;
+      }
+
+      const periodText = dateRange?.from && dateRange?.to ? 
+        `${format(dateRange.from, 'dd MMMM yyyy', { locale: id })} - ${format(dateRange.to, 'dd MMMM yyyy', { locale: id })}` : 
+        'Semua Periode';
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Buku Kas Umum</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              font-size: 12px;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              page-break-inside: avoid;
+            }
+            .period {
+              text-align: center;
+              margin-bottom: 20px;
+              font-weight: bold;
+            }
+            .summary { 
+              margin-bottom: 30px; 
+              page-break-inside: avoid;
+            }
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-bottom: 20px;
+            }
+            .summary-item { 
+              display: flex; 
+              justify-content: space-between; 
+              padding: 8px 12px; 
+              border: 1px solid #ddd;
+              background-color: #f9f9f9;
+            }
+            .table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 20px;
+            }
+            .table th, .table td { 
+              border: 1px solid #ddd; 
+              padding: 6px; 
+              text-align: left; 
+              font-size: 10px;
+            }
+            .table th { 
+              background-color: #f5f5f5; 
+              font-weight: bold;
+            }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .badge-masuk { 
+              background-color: #10B981; 
+              color: white; 
+              padding: 2px 6px; 
+              border-radius: 4px; 
+              font-size: 9px;
+            }
+            .badge-keluar { 
+              background-color: #EF4444; 
+              color: white; 
+              padding: 2px 6px; 
+              border-radius: 4px; 
+              font-size: 9px;
+            }
+            .saldo-positive { color: #10B981; font-weight: bold; }
+            .saldo-negative { color: #EF4444; font-weight: bold; }
+            @media print { 
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>BUKU KAS UMUM</h1>
+            <h2>RSUD H. Damanhuri Barabai</h2>
+          </div>
+          
+          <div class="period">
+            Periode: ${periodText}
+          </div>
+          
+          <div class="summary">
+            <h3>Ringkasan</h3>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span>Total Penerimaan:</span>
+                <span><strong>Rp ${totalDebit.toLocaleString('id-ID')}</strong></span>
+              </div>
+              <div class="summary-item">
+                <span>Total Pengeluaran:</span>
+                <span><strong>Rp ${totalKredit.toLocaleString('id-ID')}</strong></span>
+              </div>
+              <div class="summary-item">
+                <span>Saldo Akhir:</span>
+                <span class="${saldoAkhir >= 0 ? 'saldo-positive' : 'saldo-negative'}">
+                  <strong>Rp ${saldoAkhir.toLocaleString('id-ID')}</strong>
+                </span>
+              </div>
+              <div class="summary-item">
+                <span>Total Transaksi:</span>
+                <span><strong>${allTransactions.length}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3>Detail Transaksi</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Keterangan</th>
+                  <th>Rekening</th>
+                  <th>Pihak</th>
+                  <th class="text-right">Debit</th>
+                  <th class="text-right">Kredit</th>
+                  <th class="text-right">Saldo</th>
+                  <th class="text-center">Jenis</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${transactionsWithBalance.length === 0 ? 
+                  '<tr><td colspan="8" class="text-center">Tidak ada data transaksi untuk periode yang dipilih</td></tr>' :
+                  transactionsWithBalance.map(transaction => `
+                    <tr>
+                      <td>${format(new Date(transaction.tanggal), 'dd/MM/yyyy')}</td>
+                      <td>${transaction.keterangan}</td>
+                      <td>${transaction.nama_rek}</td>
+                      <td>${transaction.pihak}</td>
+                      <td class="text-right">${transaction.debit > 0 ? `Rp ${transaction.debit.toLocaleString('id-ID')}` : '-'}</td>
+                      <td class="text-right">${transaction.kredit > 0 ? `Rp ${transaction.kredit.toLocaleString('id-ID')}` : '-'}</td>
+                      <td class="text-right ${transaction.saldo >= 0 ? 'saldo-positive' : 'saldo-negative'}">
+                        Rp ${transaction.saldo.toLocaleString('id-ID')}
+                      </td>
+                      <td class="text-center">
+                        <span class="${transaction.type === 'masuk' ? 'badge-masuk' : 'badge-keluar'}">
+                          ${transaction.type === 'masuk' ? 'Masuk' : 'Keluar'}
+                        </span>
+                      </td>
+                    </tr>
+                  `).join('')
+                }
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="margin-top: 30px; text-align: right; font-size: 10px;">
+            Dicetak pada: ${new Date().toLocaleString('id-ID')}
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+      
+      toast.success("PDF berhasil disiapkan untuk dicetak!");
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error("Gagal mengekspor PDF");
+    }
   };
 
   return (
