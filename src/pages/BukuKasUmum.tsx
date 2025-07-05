@@ -341,7 +341,7 @@ export default function BukuKasUmum() {
                 <FileSpreadsheet className="h-4 w-4" />
                 Excel
               </Button>
-              <Button onClick={handleExportPDF} className="flex items-center gap-2">
+              <Button onClick={handleExportPDF} className="flex-1 items-center gap-2">
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
