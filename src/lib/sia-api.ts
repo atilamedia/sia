@@ -1,218 +1,159 @@
-import { supabase } from "@/integrations/supabase/client";
+import { Account, CashFlow, JournalEntry, JournalType } from "./types";
 
-const SIA_API_URL = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
+class SiaApiService {
+  private baseUrl = 'https://dcvhzuqlsiwudygwwhhr.supabase.co/functions/v1/sia-api';
 
-export interface MasterRekening {
-  kode_rek: string;
-  nama_rek: string;
-  saldo: number;
-  level: number;
-  k_level: 'Induk' | 'Detail Kas' | 'Detail Bk' | 'Detail' | 'Sendiri';
-  rek_induk: string;
-  id_div: string;
-  jenis_rek: 'NERACA' | 'LRA' | 'LO';
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface KasMasuk {
-  id_km?: string;
-  tanggal: string;
-  kode_rek: string;
-  total: number;
-  keterangan: string;
-  pembayar: string;
-  no_cek?: string;
-  usernya: string;
-  id_div?: string;
-}
-
-export interface KasKeluar {
-  id_kk?: string;
-  tanggal: string;
-  bagian_seksi: string;
-  kode_rek: string;
-  total: number;
-  keterangan: string;
-  penerima: string;
-  no_cek?: string;
-  usernya: string;
-  id_div?: string;
-}
-
-export interface JurnalEntry {
-  kode_rek: string;
-  deskripsi: string;
-  debit: number;
-  kredit: number;
-}
-
-export interface JurnalData {
-  tanggal: string;
-  usernya: string;
-  id_div?: string;
-  id_jj?: string;
-  entries: JurnalEntry[];
-}
-
-export class SiaApiClient {
-  private async callApi(endpoint: string, options: RequestInit = {}) {
-    try {
-      const headers = {
+  private async request(endpoint: string, options?: RequestInit) {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
-      };
-
-      console.log(`Making API call to: ${SIA_API_URL}/${endpoint}`);
-
-      const response = await fetch(`${SIA_API_URL}/${endpoint}`, {
-        ...options,
-        headers,
-      });
-
-      console.log(`API response status: ${response.status}`);
-
-      if (!response.ok) {
-        let errorMessage = 'API call failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-          console.error('API Error Details:', errorData);
-        } catch (e) {
-          console.error('Could not parse error response:', e);
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log(`API call successful:`, data);
-      return data;
-    } catch (error) {
-      console.error(`API call error for ${endpoint}:`, error);
-      throw error;
+        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjdmh6dXFsc2l3dWR5Z3d3aGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1Mzg0MTcsImV4cCI6MjA2NzExNDQxN30.uxBK0gLaodF7CcFaZBuqloI9OJAdZJ_TA5c3iylF-eo`,
+        ...options?.headers,
+      },
+      ...options,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    return response.json();
   }
 
-  // Master Rekening methods
-  async getMasterRekening(): Promise<{ data: MasterRekening[] }> {
-    return this.callApi('master-rekening');
-  }
-
-  async createMasterRekening(data: Omit<MasterRekening, 'created_at' | 'updated_at'>): Promise<{ data: MasterRekening; message: string }> {
-    return this.callApi('master-rekening', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateMasterRekening(data: MasterRekening): Promise<{ data: MasterRekening; message: string }> {
-    return this.callApi('master-rekening', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteMasterRekening(kodeRek: string): Promise<{ message: string }> {
-    return this.callApi(`master-rekening?kode_rek=${kodeRek}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Kas Masuk methods
-  async getKasMasuk(startDate?: string, endDate?: string): Promise<{ data: any[] }> {
+  async getKasMasuk(startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
-    return this.callApi(`kas-masuk${params.toString() ? '?' + params.toString() : ''}`);
+    const queryString = params.toString();
+    return this.request(`/kas-masuk${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createKasMasuk(data: KasMasuk): Promise<{ data: any; message: string }> {
-    return this.callApi('kas-masuk', {
+  async createKasMasuk(data: any) {
+    return this.request('/kas-masuk', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateKasMasuk(data: KasMasuk): Promise<{ data: any; message: string }> {
-    return this.callApi('kas-masuk', {
+  async updateKasMasuk(id: string, data: any) {
+    return this.request(`/kas-masuk/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteKasMasuk(id_km: string): Promise<{ message: string }> {
-    return this.callApi(`kas-masuk?id_km=${id_km}`, {
+  async deleteKasMasuk(id: string) {
+    return this.request(`/kas-masuk/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Kas Keluar methods
-  async getKasKeluar(startDate?: string, endDate?: string): Promise<{ data: any[] }> {
+  async getKasKeluar(startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
-    return this.callApi(`kas-keluar${params.toString() ? '?' + params.toString() : ''}`);
+    const queryString = params.toString();
+    return this.request(`/kas-keluar${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createKasKeluar(data: KasKeluar): Promise<{ data: any; message: string }> {
-    return this.callApi('kas-keluar', {
+  async createKasKeluar(data: any) {
+    return this.request('/kas-keluar', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateKasKeluar(data: KasKeluar): Promise<{ data: any; message: string }> {
-    return this.callApi('kas-keluar', {
+  async updateKasKeluar(id: string, data: any) {
+    return this.request(`/kas-keluar/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
-  async deleteKasKeluar(id_kk: string): Promise<{ message: string }> {
-    return this.callApi(`kas-keluar?id_kk=${id_kk}`, {
+  async deleteKasKeluar(id: string) {
+    return this.request(`/kas-keluar/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Jurnal methods
-  async getJurnal(startDate?: string, endDate?: string): Promise<{ data: any[] }> {
+  async getJurnal(startDate?: string, endDate?: string) {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
     
-    return this.callApi(`jurnal${params.toString() ? '?' + params.toString() : ''}`);
+    const queryString = params.toString();
+    return this.request(`/jurnal${queryString ? `?${queryString}` : ''}`);
   }
 
-  async createJurnal(data: JurnalData): Promise<{ data: any; message: string }> {
-    return this.callApi('jurnal', {
+  async createJurnal(data: any) {
+    return this.request('/jurnal', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateJurnal(id_ju: string, data: any): Promise<{ data: any; message: string }> {
-    return this.callApi('jurnal', {
+  async updateJurnal(id: string, data: any) {
+    return this.request(`/jurnal/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ id_ju, ...data }),
+      body: JSON.stringify(data),
     });
   }
 
-  async deleteJurnal(id_ju: string): Promise<{ message: string }> {
-    return this.callApi(`jurnal?id_ju=${id_ju}`, {
+  async deleteJurnal(id: string) {
+    return this.request(`/jurnal/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Laporan methods
-  async getLaporan(type: string, startDate?: string, endDate?: string): Promise<{ data: any[] }> {
-    const params = new URLSearchParams({ type });
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    
-    return this.callApi(`laporan?${params.toString()}`);
+  async getRekening() {
+    return this.request('/rekening');
+  }
+
+  async createRekening(data: any) {
+    return this.request('/rekening', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRekening(code: string, data: any) {
+    return this.request(`/rekening/${code}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRekening(code: string) {
+    return this.request(`/rekening/${code}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAnggaran(tahun: number) {
+    return this.request(`/anggaran?tahun=${tahun}`);
+  }
+
+  async createAnggaran(data: any) {
+    return this.request('/anggaran', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAnggaran(kodeRek: string, tahun: number, data: any) {
+    return this.request(`/anggaran/${kodeRek}/${tahun}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAnggaran(kodeRek: string, tahun: number) {
+    return this.request(`/anggaran/${kodeRek}/${tahun}`, {
+      method: 'DELETE',
+    });
   }
 }
 
-export const siaApi = new SiaApiClient();
+export const siaApi = new SiaApiService();

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Home, 
@@ -13,7 +12,8 @@ import {
   ChevronRight,
   Menu,
   X,
-  Book
+  Book,
+  Calculator
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -27,6 +27,7 @@ const navigation = [
   { name: "Jurnal Umum", href: "/journal", icon: BookOpen },
   { name: "Buku Kas Umum", href: "/buku-kas-umum", icon: Book },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
+  { name: "LRA", href: "/laporan-realisasi-anggaran", icon: Calculator },
   { name: "Laporan", href: "/reports", icon: FileText },
   { name: "Akun Rekening", href: "/accounts", icon: Users },
 ];
