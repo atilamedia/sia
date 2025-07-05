@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -107,23 +106,23 @@ serve(async (req) => {
       console.log(`Handling rekening operation for code: ${kodeRek}`)
 
       if (method === 'PUT') {
-        const body = await req.json()
-        console.log('Raw request body:', JSON.stringify(body, null, 2))
-        console.log('Updating rekening with code:', kodeRek)
-        
-        // Clean up the data before updating - handle rek_induk properly
-        const cleanedData = {
-          ...body
-        }
-        
-        // Handle rek_induk field properly - convert various null-like values to actual null
-        if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null' || body.rek_induk === undefined) {
-          cleanedData.rek_induk = null
-        }
-        
-        console.log('Cleaned data for update:', JSON.stringify(cleanedData, null, 2))
-        
         try {
+          const body = await req.json()
+          console.log('Raw request body:', JSON.stringify(body, null, 2))
+          console.log('Updating rekening with code:', kodeRek)
+          
+          // Clean up the data before updating - handle rek_induk properly
+          const cleanedData = {
+            ...body
+          }
+          
+          // Handle rek_induk field properly - convert various null-like values to actual null
+          if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null' || body.rek_induk === undefined) {
+            cleanedData.rek_induk = null
+          }
+          
+          console.log('Cleaned data for update:', JSON.stringify(cleanedData, null, 2))
+          
           const { data, error } = await supabaseClient
             .from('m_rekening')
             .update(cleanedData)
@@ -162,23 +161,34 @@ serve(async (req) => {
       if (method === 'DELETE') {
         console.log('Deleting rekening with code:', kodeRek)
         
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .delete()
-          .eq('kode_rek', kodeRek)
-          .select()
+        try {
+          const { data, error } = await supabaseClient
+            .from('m_rekening')
+            .delete()
+            .eq('kode_rek', kodeRek)
+            .select()
 
-        if (error) {
-          console.error('Error deleting rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
+          if (error) {
+            console.error('Error deleting rekening:', error)
+            return new Response(JSON.stringify({ error: error.message }), {
+              status: 400,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            })
+          }
+
+          return new Response(JSON.stringify({ data }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        } catch (deleteError) {
+          console.error('Caught error during delete:', deleteError)
+          return new Response(JSON.stringify({ 
+            error: 'Delete failed',
+            message: deleteError.message || 'Unknown error'
+          }), {
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         }
-
-        return new Response(JSON.stringify({ data }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
       }
     }
 
