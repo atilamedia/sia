@@ -24,6 +24,13 @@ serve(async (req) => {
 
     console.log(`${method} ${path}`)
 
+    // Handle root path
+    if (path === '' || path === '/') {
+      return new Response(JSON.stringify({ message: 'SIA API is running' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     // Rekening endpoints
     if (path === '/rekening') {
       if (method === 'GET') {
@@ -280,6 +287,53 @@ serve(async (req) => {
       }
     }
 
+    // Handle kas masuk update and delete with path parameters
+    const kasMasukMatch = path.match(/^\/kas-masuk\/(.+)$/)
+    if (kasMasukMatch) {
+      const idKm = kasMasukMatch[1]
+
+      if (method === 'PUT') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('kasmasuk')
+          .update(body)
+          .eq('id_km', idKm)
+          .select()
+
+        if (error) {
+          console.error('Error updating kas masuk:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'DELETE') {
+        const { data, error } = await supabaseClient
+          .from('kasmasuk')
+          .delete()
+          .eq('id_km', idKm)
+          .select()
+
+        if (error) {
+          console.error('Error deleting kas masuk:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
     // Kas Keluar endpoints
     if (path === '/kas-keluar') {
       if (method === 'GET') {
@@ -328,6 +382,53 @@ serve(async (req) => {
 
         if (error) {
           console.error('Error creating kas keluar:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
+
+    // Handle kas keluar update and delete with path parameters
+    const kasKeluarMatch = path.match(/^\/kas-keluar\/(.+)$/)
+    if (kasKeluarMatch) {
+      const idKk = kasKeluarMatch[1]
+
+      if (method === 'PUT') {
+        const body = await req.json()
+        const { data, error } = await supabaseClient
+          .from('kaskeluar')
+          .update(body)
+          .eq('id_kk', idKk)
+          .select()
+
+        if (error) {
+          console.error('Error updating kas keluar:', error)
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        return new Response(JSON.stringify({ data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      if (method === 'DELETE') {
+        const { data, error } = await supabaseClient
+          .from('kaskeluar')
+          .delete()
+          .eq('id_kk', idKk)
+          .select()
+
+        if (error) {
+          console.error('Error deleting kas keluar:', error)
           return new Response(JSON.stringify({ error: error.message }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -436,14 +537,16 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ error: 'Endpoint not found' }), {
+    // Return 404 for unknown endpoints
+    console.log(`Unknown endpoint: ${path}`)
+    return new Response(JSON.stringify({ error: 'Endpoint not found', path }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
     console.error('Unhandled error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
