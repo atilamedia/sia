@@ -14,6 +14,7 @@ import Accounts from "./pages/Accounts";
 import Reports from "./pages/Reports";
 import BukuKasUmum from "./pages/BukuKasUmum";
 import LaporanRealisasiAnggaran from "./pages/LaporanRealisasiAnggaran";
+import Anggaran from "./pages/Anggaran";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/cash-out" element={<CashOut />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/accounts" element={<Accounts />} />
+          <Route path="/anggaran" element={<Anggaran />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/buku-kas-umum" element={<BukuKasUmum />} />
           <Route path="/laporan-realisasi-anggaran" element={<LaporanRealisasiAnggaran />} />

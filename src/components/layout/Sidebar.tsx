@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Home, 
@@ -13,7 +14,8 @@ import {
   Menu,
   X,
   Book,
-  Calculator
+  Calculator,
+  PiggyBank
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,7 @@ const navigation = [
   { name: "Kas Keluar", href: "/cash-out", icon: TrendingDown },
   { name: "Jurnal Umum", href: "/journal", icon: BookOpen },
   { name: "Buku Kas Umum", href: "/buku-kas-umum", icon: Book },
+  { name: "Anggaran", href: "/anggaran", icon: PiggyBank },
   { name: "Arus Kas", href: "/cash-flow", icon: BarChart3 },
   { name: "LRA", href: "/laporan-realisasi-anggaran", icon: Calculator },
   { name: "Laporan", href: "/reports", icon: FileText },
