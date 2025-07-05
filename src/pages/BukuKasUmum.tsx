@@ -327,7 +327,6 @@ export default function BukuKasUmum() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* Filter Periode */}
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
               <DateRangePicker
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
