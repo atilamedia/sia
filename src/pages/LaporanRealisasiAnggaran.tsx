@@ -39,11 +39,19 @@ export default function LaporanRealisasiAnggaran() {
 
   const currentYear = new Date().getFullYear();
 
+  // Query untuk mengambil data rekening
+  const { data: rekeningData } = useQuery({
+    queryKey: ['rekening'],
+    queryFn: async () => {
+      const response = await siaApi.getMasterRekening();
+      return response;
+    }
+  });
+
   // Query untuk mengambil data anggaran
   const { data: anggaranData, isLoading: loadingAnggaran } = useQuery({
     queryKey: ['anggaran', currentYear],
     queryFn: async () => {
-      // Implementasi query untuk mengambil data anggaran
       const response = await siaApi.getAnggaran(currentYear);
       return response;
     }
@@ -70,35 +78,54 @@ export default function LaporanRealisasiAnggaran() {
   const lraData: LRAData[] = [];
   
   // Proses data anggaran dan realisasi
-  if (anggaranData?.data && realisasiData) {
-    const rekeningMap = new Map<string, { anggaran: number, realisasi: number, nama_rek: string, jenis_rek: string }>();
+  if (anggaranData?.data && realisasiData && rekeningData?.data) {
+    // Create a map of rekening for quick lookup
+    const rekeningMap = new Map();
+    rekeningData.data.forEach((rek: any) => {
+      rekeningMap.set(rek.kode_rek, rek);
+    });
+
+    const dataMap = new Map<string, { anggaran: number, realisasi: number, nama_rek: string, jenis_rek: string }>();
     
     // Proses data anggaran
     anggaranData.data.forEach((item: any) => {
-      rekeningMap.set(item.kode_rek, {
+      const rekening = rekeningMap.get(item.kode_rek);
+      dataMap.set(item.kode_rek, {
         anggaran: item.total || 0,
         realisasi: 0,
-        nama_rek: item.nama_rek || '',
-        jenis_rek: item.jenis_rek || 'LRA'
+        nama_rek: rekening?.nama_rek || item.nama_rek || 'Nama Rekening Tidak Ditemukan',
+        jenis_rek: rekening?.jenis_rek || 'LRA'
       });
     });
 
     // Proses data realisasi kas masuk
     realisasiData.kasMasuk?.data?.forEach((item: any) => {
-      const existing = rekeningMap.get(item.kode_rek) || { anggaran: 0, realisasi: 0, nama_rek: item.nama_rek || '', jenis_rek: 'LRA' };
+      const rekening = rekeningMap.get(item.kode_rek);
+      const existing = dataMap.get(item.kode_rek) || { 
+        anggaran: 0, 
+        realisasi: 0, 
+        nama_rek: rekening?.nama_rek || item.m_rekening?.nama_rek || 'Nama Rekening Tidak Ditemukan', 
+        jenis_rek: rekening?.jenis_rek || 'LRA' 
+      };
       existing.realisasi += item.total || 0;
-      rekeningMap.set(item.kode_rek, existing);
+      dataMap.set(item.kode_rek, existing);
     });
 
     // Proses data realisasi kas keluar
     realisasiData.kasKeluar?.data?.forEach((item: any) => {
-      const existing = rekeningMap.get(item.kode_rek) || { anggaran: 0, realisasi: 0, nama_rek: item.nama_rek || '', jenis_rek: 'LRA' };
+      const rekening = rekeningMap.get(item.kode_rek);
+      const existing = dataMap.get(item.kode_rek) || { 
+        anggaran: 0, 
+        realisasi: 0, 
+        nama_rek: rekening?.nama_rek || item.m_rekening?.nama_rek || 'Nama Rekening Tidak Ditemukan', 
+        jenis_rek: rekening?.jenis_rek || 'LRA' 
+      };
       existing.realisasi += item.total || 0;
-      rekeningMap.set(item.kode_rek, existing);
+      dataMap.set(item.kode_rek, existing);
     });
 
     // Konversi ke array LRAData
-    rekeningMap.forEach((value, key) => {
+    dataMap.forEach((value, key) => {
       const selisih = value.anggaran - value.realisasi;
       const persentase = value.anggaran > 0 ? (value.realisasi / value.anggaran) * 100 : 0;
       
