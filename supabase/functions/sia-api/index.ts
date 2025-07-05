@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -102,14 +103,16 @@ serve(async (req) => {
     // Handle rekening update and delete with path parameters
     const rekeningMatch = path.match(/^\/rekening\/(.+)$/)
     if (rekeningMatch) {
-      const kodeRek = decodeURIComponent(rekeningMatch[1])
+      // Use decodeURIComponent twice to handle double encoding
+      let kodeRek = decodeURIComponent(decodeURIComponent(rekeningMatch[1]))
       console.log(`Handling rekening operation for code: ${kodeRek}`)
 
       if (method === 'PUT') {
         try {
+          console.log('Starting PUT operation for kode_rek:', kodeRek)
+          
           const body = await req.json()
           console.log('Raw request body:', JSON.stringify(body, null, 2))
-          console.log('Updating rekening with code:', kodeRek)
           
           // Clean up the data before updating - handle rek_induk properly
           const cleanedData = {
@@ -144,13 +147,15 @@ serve(async (req) => {
 
           console.log('Successfully updated rekening:', data)
           return new Response(JSON.stringify({ data }), {
+            status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         } catch (updateError) {
           console.error('Caught error during update:', updateError)
           return new Response(JSON.stringify({ 
             error: 'Update failed',
-            message: updateError.message || 'Unknown error'
+            message: updateError.message || 'Unknown error',
+            stack: updateError.stack || 'No stack trace'
           }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -159,9 +164,9 @@ serve(async (req) => {
       }
 
       if (method === 'DELETE') {
-        console.log('Deleting rekening with code:', kodeRek)
-        
         try {
+          console.log('Starting DELETE operation for kode_rek:', kodeRek)
+          
           const { data, error } = await supabaseClient
             .from('m_rekening')
             .delete()
@@ -169,21 +174,29 @@ serve(async (req) => {
             .select()
 
           if (error) {
-            console.error('Error deleting rekening:', error)
-            return new Response(JSON.stringify({ error: error.message }), {
+            console.error('Database error deleting rekening:', error)
+            return new Response(JSON.stringify({ 
+              error: error.message,
+              details: error.details,
+              hint: error.hint,
+              code: error.code
+            }), {
               status: 400,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             })
           }
 
+          console.log('Successfully deleted rekening:', data)
           return new Response(JSON.stringify({ data }), {
+            status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         } catch (deleteError) {
           console.error('Caught error during delete:', deleteError)
           return new Response(JSON.stringify({ 
             error: 'Delete failed',
-            message: deleteError.message || 'Unknown error'
+            message: deleteError.message || 'Unknown error',
+            stack: deleteError.stack || 'No stack trace'
           }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
