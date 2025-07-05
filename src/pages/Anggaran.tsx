@@ -1,23 +1,25 @@
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Download, Upload, FileSpreadsheet, Plus, Save } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, Download, Upload, Plus, Edit, Trash2 } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { siaApi, MasterRekening, AnggaranData } from "@/lib/sia-api";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { AnggaranModal } from "@/components/anggaran/AnggaranModal";
+import { DeleteAnggaranDialog } from "@/components/anggaran/DeleteAnggaranDialog";
 
 export default function Anggaran() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [editingBudgets, setEditingBudgets] = useState<{[key: string]: number}>({});
-  const queryClient = useQueryClient();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editingAnggaran, setEditingAnggaran] = useState<(AnggaranData & { nama_rek?: string }) | undefined>();
 
   // Generate year options (current year ± 5 years)
   const yearOptions = [];
@@ -44,83 +46,19 @@ export default function Anggaran() {
     }
   });
 
-  // Mutation untuk menyimpan anggaran
-  const saveBudgetMutation = useMutation({
-    mutationFn: async (data: AnggaranData) => {
-      return await siaApi.createAnggaran(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['anggaran', selectedYear] });
-      toast.success("Anggaran berhasil disimpan!");
-    },
-    onError: (error) => {
-      console.error('Error saving budget:', error);
-      toast.error("Gagal menyimpan anggaran");
-    }
-  });
-
-  // Mutation untuk update anggaran
-  const updateBudgetMutation = useMutation({
-    mutationFn: async ({ kodeRek, data }: { kodeRek: string, data: AnggaranData }) => {
-      return await siaApi.updateAnggaran(kodeRek, selectedYear, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['anggaran', selectedYear] });
-      toast.success("Anggaran berhasil diupdate!");
-    },
-    onError: (error) => {
-      console.error('Error updating budget:', error);
-      toast.error("Gagal mengupdate anggaran");
-    }
-  });
-
   const rekening: MasterRekening[] = rekeningData?.data || [];
   const anggaran: AnggaranData[] = anggaranData?.data || [];
 
   // Gabungkan data rekening dengan anggaran
-  const budgetData = rekening.map(rek => {
-    const existingBudget = anggaran.find(ang => ang.kode_rek === rek.kode_rek);
+  const budgetData = anggaran.map(ang => {
+    const rek = rekening.find(r => r.kode_rek === ang.kode_rek);
     return {
-      ...rek,
-      anggaran: existingBudget?.total || 0,
-      hasExistingBudget: !!existingBudget
+      ...ang,
+      nama_rek: rek?.nama_rek || 'Rekening tidak ditemukan',
+      jenis_rek: rek?.jenis_rek || '',
+      level: rek?.level || 0
     };
   });
-
-  const handleBudgetChange = (kodeRek: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setEditingBudgets(prev => ({
-      ...prev,
-      [kodeRek]: numValue
-    }));
-  };
-
-  const handleSaveBudget = async (kodeRek: string, currentBudget: number, hasExisting: boolean) => {
-    const newAmount = editingBudgets[kodeRek];
-    if (newAmount === undefined) return;
-
-    const budgetData: AnggaranData = {
-      kode_rek: kodeRek,
-      tahun: selectedYear,
-      total: newAmount,
-      tanda: 'Y',
-      usernya: 'admin',
-      validasi_realisasi: 'Y'
-    };
-
-    if (hasExisting) {
-      await updateBudgetMutation.mutateAsync({ kodeRek, data: budgetData });
-    } else {
-      await saveBudgetMutation.mutateAsync(budgetData);
-    }
-
-    // Clear editing state
-    setEditingBudgets(prev => {
-      const newState = { ...prev };
-      delete newState[kodeRek];
-      return newState;
-    });
-  };
 
   const handleExportTemplate = () => {
     try {
@@ -159,17 +97,28 @@ export default function Anggaran() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         // Process imported data
-        const importedBudgets: {[key: string]: number} = {};
-        jsonData.forEach((row: any) => {
+        let successCount = 0;
+        jsonData.forEach(async (row: any) => {
           const kodeRek = row['Kode Rekening'];
           const anggaran = parseFloat(row['Anggaran']) || 0;
           if (kodeRek && anggaran > 0) {
-            importedBudgets[kodeRek] = anggaran;
+            try {
+              await siaApi.createAnggaran({
+                kode_rek: kodeRek,
+                tahun: selectedYear,
+                total: anggaran,
+                tanda: 'Y',
+                usernya: 'admin',
+                validasi_realisasi: 'Y'
+              });
+              successCount++;
+            } catch (error) {
+              console.error(`Error importing ${kodeRek}:`, error);
+            }
           }
         });
 
-        setEditingBudgets(prev => ({ ...prev, ...importedBudgets }));
-        toast.success(`Berhasil import ${Object.keys(importedBudgets).length} data anggaran!`);
+        toast.success(`Berhasil import ${successCount} data anggaran!`);
       } catch (error) {
         console.error('Error importing Excel:', error);
         toast.error("Gagal import file Excel");
@@ -179,6 +128,23 @@ export default function Anggaran() {
     
     // Reset input
     event.target.value = '';
+  };
+
+  const handleCreateAnggaran = () => {
+    setModalMode('create');
+    setEditingAnggaran(undefined);
+    setModalOpen(true);
+  };
+
+  const handleEditAnggaran = (anggaran: AnggaranData & { nama_rek?: string }) => {
+    setModalMode('edit');
+    setEditingAnggaran(anggaran);
+    setModalOpen(true);
+  };
+
+  const handleDeleteAnggaran = (anggaran: AnggaranData & { nama_rek?: string }) => {
+    setEditingAnggaran(anggaran);
+    setDeleteDialogOpen(true);
   };
 
   const isLoading = loadingRekening || loadingAnggaran;
@@ -213,6 +179,10 @@ export default function Anggaran() {
             
             {/* Action Buttons */}
             <div className="flex gap-2">
+              <Button onClick={handleCreateAnggaran} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Tambah
+              </Button>
               <Button onClick={handleExportTemplate} variant="outline" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Template
@@ -239,7 +209,7 @@ export default function Anggaran() {
           <CardHeader>
             <CardTitle>Daftar Anggaran per Rekening</CardTitle>
             <CardDescription>
-              Tahun Anggaran: {selectedYear} • Total Rekening: {rekening.length}
+              Tahun Anggaran: {selectedYear} • Total Anggaran: {budgetData.length}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -258,10 +228,10 @@ export default function Anggaran() {
                       <TableHead>Kode Rekening</TableHead>
                       <TableHead>Nama Rekening</TableHead>
                       <TableHead>Jenis</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead className="text-right">Anggaran Saat Ini</TableHead>
-                      <TableHead className="text-right">Anggaran Baru</TableHead>
+                      <TableHead className="text-right">Total Anggaran</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Validasi</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -269,65 +239,67 @@ export default function Anggaran() {
                     {budgetData.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          Tidak ada data rekening
+                          Belum ada data anggaran untuk tahun {selectedYear}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      budgetData.map((item) => {
-                        const isEditing = editingBudgets.hasOwnProperty(item.kode_rek);
-                        const editingValue = editingBudgets[item.kode_rek];
-                        
-                        return (
-                          <TableRow key={item.kode_rek}>
-                            <TableCell className="font-mono text-sm">
-                              {item.kode_rek}
-                            </TableCell>
-                            <TableCell className="max-w-xs">
-                              <div className="truncate" title={item.nama_rek || ''}>
-                                {item.nama_rek}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {item.jenis_rek}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{item.level}</TableCell>
-                            <TableCell className="text-right">
-                              Rp {item.anggaran.toLocaleString('id-ID')}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Input
-                                type="number"
-                                value={isEditing ? editingValue : item.anggaran}
-                                onChange={(e) => handleBudgetChange(item.kode_rek, e.target.value)}
-                                className="w-32 text-right"
-                                placeholder="0"
-                                min="0"
-                                step="1000"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant={item.hasExistingBudget ? 'default' : 'secondary'}
-                              >
-                                {item.hasExistingBudget ? 'Ada' : 'Belum Ada'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
+                      budgetData.map((item) => (
+                        <TableRow key={item.kode_rek}>
+                          <TableCell className="font-mono text-sm">
+                            {item.kode_rek}
+                          </TableCell>
+                          <TableCell className="max-w-xs">
+                            <div className="truncate" title={item.nama_rek || ''}>
+                              {item.nama_rek}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {item.jenis_rek}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            Rp {item.total.toLocaleString('id-ID')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={item.tanda === 'Y' ? 'default' : 'secondary'}
+                            >
+                              {item.tanda === 'Y' ? 'Aktif' : 'Tidak Aktif'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={item.validasi_realisasi === 'Y' ? 'default' : 'secondary'}
+                            >
+                              {item.validasi_realisasi === 'Y' ? 'Valid' : 'Belum Valid'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-600">
+                            {item.usernya}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
                               <Button
                                 size="sm"
-                                onClick={() => handleSaveBudget(item.kode_rek, item.anggaran, item.hasExistingBudget)}
-                                disabled={!isEditing || saveBudgetMutation.isPending || updateBudgetMutation.isPending}
+                                variant="outline"
+                                onClick={() => handleEditAnggaran(item)}
                                 className="flex items-center gap-1"
                               >
-                                <Save className="h-3 w-3" />
-                                Simpan
+                                <Edit className="h-3 w-3" />
                               </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteAnggaran(item)}
+                                className="flex items-center gap-1 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
@@ -335,6 +307,25 @@ export default function Anggaran() {
             )}
           </CardContent>
         </Card>
+
+        {/* Modal untuk input/edit anggaran */}
+        <AnggaranModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tahun={selectedYear}
+          editData={editingAnggaran}
+          mode={modalMode}
+        />
+
+        {/* Dialog konfirmasi delete */}
+        {editingAnggaran && (
+          <DeleteAnggaranDialog
+            isOpen={deleteDialogOpen}
+            onClose={() => setDeleteDialogOpen(false)}
+            anggaran={editingAnggaran}
+            tahun={selectedYear}
+          />
+        )}
       </div>
     </Layout>
   );
