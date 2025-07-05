@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -75,6 +76,8 @@ serve(async (req) => {
 
       if (method === 'POST') {
         const body = await req.json()
+        console.log('Creating rekening with data:', body)
+        
         const { data, error } = await supabaseClient
           .from('m_rekening')
           .insert(body)
@@ -97,13 +100,26 @@ serve(async (req) => {
     // Handle rekening update and delete with path parameters
     const rekeningMatch = path.match(/^\/rekening\/(.+)$/)
     if (rekeningMatch) {
-      const kodeRek = rekeningMatch[1]
+      const kodeRek = decodeURIComponent(rekeningMatch[1])
+      console.log(`Handling rekening operation for code: ${kodeRek}`)
 
       if (method === 'PUT') {
         const body = await req.json()
+        console.log('Updating rekening with data:', body)
+        console.log('Updating rekening with code:', kodeRek)
+        
+        // Clean up the data before updating
+        const cleanedData = {
+          ...body,
+          // Ensure rek_induk is properly handled
+          rek_induk: body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' ? null : body.rek_induk
+        }
+        
+        console.log('Cleaned data for update:', cleanedData)
+        
         const { data, error } = await supabaseClient
           .from('m_rekening')
-          .update(body)
+          .update(cleanedData)
           .eq('kode_rek', kodeRek)
           .select()
 
@@ -115,12 +131,15 @@ serve(async (req) => {
           })
         }
 
+        console.log('Successfully updated rekening:', data)
         return new Response(JSON.stringify({ data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'DELETE') {
+        console.log('Deleting rekening with code:', kodeRek)
+        
         const { data, error } = await supabaseClient
           .from('m_rekening')
           .delete()
