@@ -19,21 +19,35 @@ serve(async (req) => {
     )
 
     const url = new URL(req.url)
-    const path = url.pathname.replace('/functions/v1/sia-api', '')
+    let path = url.pathname
+    
+    // Remove the /functions/v1/sia-api prefix if it exists
+    if (path.startsWith('/functions/v1/sia-api')) {
+      path = path.replace('/functions/v1/sia-api', '')
+    }
+    
+    // Ensure path starts with / if not empty
+    if (path && !path.startsWith('/')) {
+      path = '/' + path
+    }
+    
     const method = req.method
 
-    console.log(`${method} ${path}`)
+    console.log(`Processing ${method} ${path} from ${url.pathname}`)
 
     // Handle root path
     if (path === '' || path === '/') {
-      return new Response(JSON.stringify({ message: 'SIA API is running' }), {
+      return new Response(JSON.stringify({ message: 'SIA API is running', timestamp: new Date().toISOString() }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     // Rekening endpoints
     if (path === '/rekening') {
+      console.log('Handling rekening endpoint')
+      
       if (method === 'GET') {
+        console.log('Fetching rekening data from m_rekening table')
         const { data, error } = await supabaseClient
           .from('m_rekening')
           .select('*')
@@ -47,6 +61,7 @@ serve(async (req) => {
           })
         }
 
+        console.log(`Found ${data?.length || 0} rekening records`)
         return new Response(JSON.stringify({ data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
@@ -539,7 +554,7 @@ serve(async (req) => {
 
     // Return 404 for unknown endpoints
     console.log(`Unknown endpoint: ${path}`)
-    return new Response(JSON.stringify({ error: 'Endpoint not found', path }), {
+    return new Response(JSON.stringify({ error: 'Endpoint not found', path, originalPath: url.pathname }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
