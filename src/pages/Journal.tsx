@@ -178,29 +178,240 @@ const Journal = () => {
       ? `${format(date.from, 'dd MMMM yyyy')} - ${format(date.to, 'dd MMMM yyyy')}`
       : 'Semua Periode';
 
+    const currentDate = new Date().toLocaleString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Laporan Jurnal Umum</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .summary { margin-bottom: 30px; }
-          .summary-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-          .jurnal-item { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; }
-          .jurnal-header { background-color: #f5f5f5; padding: 12px; border-bottom: 1px solid #ddd; }
-          .table { width: 100%; border-collapse: collapse; }
-          .table th, .table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .table th { background-color: #f9f9f9; }
-          .debit { color: #3B82F6; }
-          .credit { color: #10B981; }
-          .balanced { color: #10B981; }
-          .unbalanced { color: #EF4444; }
-          @media print { body { margin: 0; } }
+          @page {
+            margin: 15mm;
+            size: A4;
+          }
+
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.4;
+          }
+          
+          .letterhead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-bottom: 3px solid #2563eb;
+          }
+          
+          .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+          }
+          
+          .logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+          }
+          
+          .institution-info h1 {
+            color: #1e40af;
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .institution-info h2 {
+            color: #1e40af;
+            margin: 2px 0;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          
+          .institution-info p {
+            margin: 1px 0;
+            font-size: 10px;
+            color: #64748b;
+          }
+          
+          .accreditation {
+            text-align: right;
+            font-size: 10px;
+          }
+          
+          .accreditation-badge {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          
+          .print-info {
+            color: #64748b;
+            font-size: 9px;
+            margin-top: 5px;
+          }
+          
+          .header { 
+            text-align: center; 
+            margin-bottom: 25px;
+          }
+          
+          .header h1 {
+            color: #1e40af;
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          
+          .header p {
+            margin: 0;
+            color: #64748b;
+            font-size: 12px;
+          }
+          
+          .summary { 
+            margin-bottom: 25px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+          }
+          
+          .summary h2 {
+            color: #1e40af;
+            margin: 0 0 12px 0;
+            font-size: 16px;
+          }
+          
+          .summary-item { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 6px 0; 
+            border-bottom: 1px solid #e2e8f0;
+          }
+          
+          .summary-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            background: white;
+            margin: 8px -15px -15px -15px;
+            padding: 12px 15px;
+            border-radius: 0 0 8px 8px;
+          }
+          
+          .jurnal-item { 
+            margin-bottom: 25px; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px;
+            overflow: hidden;
+          }
+          
+          .jurnal-header { 
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            padding: 12px 15px; 
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          
+          .jurnal-title {
+            font-weight: bold;
+            color: #1e40af;
+            font-size: 14px;
+          }
+          
+          .jurnal-meta {
+            font-size: 11px;
+            color: #64748b;
+          }
+          
+          .table { 
+            width: 100%; 
+            border-collapse: collapse;
+          }
+          
+          .table th, .table td { 
+            border: 1px solid #e2e8f0; 
+            padding: 8px 10px; 
+            text-align: left;
+            font-size: 11px;
+          }
+          
+          .table th { 
+            background: #f8fafc;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+          }
+          
+          .table tbody tr:hover {
+            background: #f8fafc;
+          }
+          
+          .debit { color: #3B82F6; font-weight: 500; }
+          .credit { color: #10B981; font-weight: 500; }
+          .balanced { color: #10B981; font-weight: bold; }
+          .unbalanced { color: #EF4444; font-weight: bold; }
+          
+          .total-row {
+            border-top: 2px solid #1e40af;
+            font-weight: bold;
+            background: #f8fafc;
+          }
+          
+          .footer {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 9px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+          }
+          
+          @media print { 
+            body { margin: 0; }
+            .jurnal-header { background: #f8fafc !important; }
+          }
         </style>
       </head>
       <body>
+        <div class="letterhead">
+          <div class="logo-section">
+            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo" class="logo" />
+            <div class="institution-info">
+              <h1>Sekolah Tinggi Ilmu Kesehatan</h1>
+              <h2>STIKES Suaka Insan Banjarmasin</h2>
+              <p>Jl. HM. Cokrokusumo No.1A, Kec. Banjarmasin Barat, Kota Banjarmasin, Kalimantan Selatan 70114</p>
+              <p>Telp: (0511) 6749670 | Email: stikessuakainsan@gmail.com | Website: www.stikes-suakainsan.ac.id</p>
+            </div>
+          </div>
+          <div class="accreditation">
+            <div class="accreditation-badge">Terakreditasi B</div>
+            <div class="print-info">Dicetak: ${currentDate}</div>
+          </div>
+        </div>
+        
         <div class="header">
           <h1>Laporan Jurnal Umum</h1>
           <p>Periode: ${dateRange}</p>
@@ -231,39 +442,48 @@ const Journal = () => {
         </div>
 
         <div>
-          <h2>Detail Jurnal</h2>
+          <h2 style="color: #1e40af; margin-bottom: 15px; font-size: 16px;">Detail Jurnal</h2>
           ${filteredData.map(jurnal => `
             <div class="jurnal-item">
               <div class="jurnal-header">
-                <strong>${jurnal.id_ju}</strong> - ${jurnal.tanggal} - ${jurnal.jurnal_jenis?.nm_jj}
+                <div class="jurnal-title">${jurnal.id_ju}</div>
+                <div class="jurnal-meta">${jurnal.tanggal} - ${jurnal.jurnal_jenis?.nm_jj}</div>
               </div>
               <table class="table">
                 <thead>
                   <tr>
-                    <th>Rekening</th>
-                    <th>Deskripsi</th>
-                    <th>Debit</th>
-                    <th>Kredit</th>
+                    <th style="width: 20%;">Rekening</th>
+                    <th style="width: 40%;">Deskripsi</th>
+                    <th style="width: 20%;" class="text-right">Debit</th>
+                    <th style="width: 20%;" class="text-right">Kredit</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${jurnal.jurnal?.map(entry => `
                     <tr>
-                      <td>${entry.kode_rek}<br><small>${entry.m_rekening?.nama_rek || ''}</small></td>
+                      <td>
+                        <strong>${entry.kode_rek}</strong>
+                        <br><small style="color: #64748b;">${entry.m_rekening?.nama_rek || ''}</small>
+                      </td>
                       <td>${entry.deskripsi}</td>
-                      <td class="debit">${entry.debit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
-                      <td class="credit">${entry.kredit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
+                      <td class="debit text-right">${entry.debit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
+                      <td class="credit text-right">${entry.kredit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
                     </tr>
                   `).join('') || ''}
-                  <tr style="border-top: 2px solid #333; font-weight: bold;">
-                    <td colspan="2">Total:</td>
-                    <td class="debit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}</td>
-                    <td class="credit">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}</td>
+                  <tr class="total-row">
+                    <td colspan="2"><strong>Total:</strong></td>
+                    <td class="debit text-right"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}</strong></td>
+                    <td class="credit text-right"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}</strong></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           `).join('')}
+        </div>
+        
+        <div class="footer">
+          <p>Laporan ini digenerate secara otomatis oleh Sistem Informasi Akuntansi STIKES Suaka Insan Banjarmasin</p>
+          <p>Total ${filteredData.length} jurnal dengan ${totalEntries} entries</p>
         </div>
       </body>
       </html>

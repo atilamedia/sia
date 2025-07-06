@@ -74,7 +74,7 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
         <title>Laporan Daftar Akun Rekening</title>
         <style>
           @page {
-            margin: 20mm;
+            margin: 15mm;
             size: A4 landscape;
           }
           
@@ -85,65 +85,129 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
             line-height: 1.4;
           }
           
+          .letterhead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px 0;
+            border-bottom: 3px solid #2563eb;
+          }
+          
+          .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+          }
+          
+          .logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+          }
+          
+          .institution-info h1 {
+            color: #1e40af;
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .institution-info h2 {
+            color: #1e40af;
+            margin: 2px 0;
+            font-size: 14px;
+            font-weight: 600;
+          }
+          
+          .institution-info p {
+            margin: 1px 0;
+            font-size: 10px;
+            color: #64748b;
+          }
+          
+          .accreditation {
+            text-align: right;
+            font-size: 10px;
+          }
+          
+          .accreditation-badge {
+            background: linear-gradient(135deg, #1e40af, #3b82f6);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+          
+          .print-info {
+            color: #64748b;
+            font-size: 9px;
+            margin-top: 5px;
+          }
+          
           .header { 
             text-align: center; 
-            margin-bottom: 30px; 
-            border-bottom: 3px solid #2563eb;
-            padding-bottom: 20px;
+            margin-bottom: 30px;
           }
           
           .header h1 {
             color: #1e40af;
-            margin: 0 0 10px 0;
-            font-size: 24px;
+            margin: 0 0 5px 0;
+            font-size: 20px;
             font-weight: bold;
+            text-transform: uppercase;
           }
           
           .header p {
-            margin: 5px 0;
+            margin: 0;
             color: #64748b;
-            font-size: 14px;
+            font-size: 12px;
           }
           
           .summary { 
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             background: #f8fafc;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             border-left: 4px solid #2563eb;
           }
           
           .summary h2 {
             color: #1e40af;
-            margin: 0 0 15px 0;
-            font-size: 18px;
+            margin: 0 0 12px 0;
+            font-size: 16px;
           }
           
           .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 15px;
+            gap: 15px;
+            margin-bottom: 12px;
           }
           
           .summary-item { 
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             background: white;
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
           }
           
           .summary-item .label {
-            font-size: 11px;
+            font-size: 10px;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
           }
           
           .summary-item .value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #1e293b;
           }
@@ -156,8 +220,8 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 15px;
-            font-size: 11px;
+            margin-top: 12px;
+            font-size: 10px;
             color: #64748b;
           }
           
@@ -180,20 +244,20 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
           }
           
           .table th, .table td { 
-            padding: 12px 8px; 
+            padding: 10px 6px; 
             text-align: left;
             border-bottom: 1px solid #e2e8f0;
           }
           
           .table th {
             font-weight: 600;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
           
           .table td {
-            font-size: 11px;
+            font-size: 10px;
           }
           
           .table tbody tr:nth-child(even) {
@@ -208,9 +272,9 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
           .text-right { text-align: right; }
           
           .badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 9px;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -227,12 +291,12 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
           .badge-lo { background: #fecaca; color: #991b1b; }
           
           .footer {
-            margin-top: 30px;
+            margin-top: 25px;
             text-align: center;
-            font-size: 10px;
+            font-size: 9px;
             color: #64748b;
             border-top: 1px solid #e2e8f0;
-            padding-top: 15px;
+            padding-top: 12px;
           }
           
           @media print { 
@@ -242,10 +306,25 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
         </style>
       </head>
       <body>
+        <div class="letterhead">
+          <div class="logo-section">
+            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo" class="logo" />
+            <div class="institution-info">
+              <h1>Sekolah Tinggi Ilmu Kesehatan</h1>
+              <h2>STIKES Suaka Insan Banjarmasin</h2>
+              <p>Jl. HM. Cokrokusumo No.1A, Kec. Banjarmasin Barat, Kota Banjarmasin, Kalimantan Selatan 70114</p>
+              <p>Telp: (0511) 6749670 | Email: stikessuakainsan@gmail.com | Website: www.stikes-suakainsan.ac.id</p>
+            </div>
+          </div>
+          <div class="accreditation">
+            <div class="accreditation-badge">Terakreditasi B</div>
+            <div class="print-info">Dicetak: ${currentDate}</div>
+          </div>
+        </div>
+        
         <div class="header">
-          <h1>LAPORAN DAFTAR AKUN REKENING</h1>
+          <h1>Laporan Daftar Akun Rekening</h1>
           <p>Sistem Informasi Akuntansi</p>
-          <p>Dicetak pada: ${currentDate}</p>
         </div>
         
         <div class="summary">
@@ -326,7 +405,7 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
         </div>
         
         <div class="footer">
-          <p>Laporan ini digenerate secara otomatis oleh Sistem Informasi Akuntansi</p>
+          <p>Laporan ini digenerate secara otomatis oleh Sistem Informasi Akuntansi STIKES Suaka Insan Banjarmasin</p>
           <p>Halaman ini berisi ${filteredAccounts.length} data akun rekening</p>
         </div>
       </body>
