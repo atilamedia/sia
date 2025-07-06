@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -92,55 +91,58 @@ export default function UserManagement() {
     try {
       console.log('Fetching all users data...');
       
-      // First, try to get users from profiles table
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
+      // Get both profiles and roles data
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('user_roles').select('*')
+      ]);
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
+      if (profilesResult.error) {
+        console.error('Error fetching profiles:', profilesResult.error);
         toast.error('Gagal memuat data profil pengguna');
         return;
       }
 
-      console.log('Profiles data:', profilesData);
-
-      if (!profilesData || profilesData.length === 0) {
-        console.log('No profiles found');
-        setUsers([]);
-        return;
-      }
-
-      // Get user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
+      if (rolesResult.error) {
+        console.error('Error fetching roles:', rolesResult.error);
         toast.error('Gagal memuat data role pengguna');
         return;
       }
 
+      const profilesData = profilesResult.data || [];
+      const rolesData = rolesResult.data || [];
+
+      console.log('Profiles data:', profilesData);
       console.log('Roles data:', rolesData);
 
-      // Combine the data
-      const formattedUsers = profilesData.map((profile: any) => {
-        const userRole = rolesData?.find((role: any) => role.user_id === profile.id);
+      // Create a Set of all unique user IDs from both tables
+      const allUserIds = new Set([
+        ...profilesData.map(p => p.id),
+        ...rolesData.map(r => r.user_id)
+      ]);
+
+      console.log('All unique user IDs:', Array.from(allUserIds));
+
+      // Combine the data ensuring all users are included
+      const formattedUsers = Array.from(allUserIds).map((userId) => {
+        const profile = profilesData.find(p => p.id === userId);
+        const userRole = rolesData.find(r => r.user_id === userId);
+        
         return {
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name,
-          role: (userRole?.role || 'pengguna' || 'admin' || 'superadmin') as UserRole,
-          created_at: profile.created_at,
+          id: userId,
+          email: profile?.email || 'Email tidak tersedia',
+          full_name: profile?.full_name || null,
+          role: (userRole?.role || 'pengguna') as UserRole,
+          created_at: profile?.created_at || userRole?.created_at || new Date().toISOString(),
           last_sign_in_at: null, // Not available from profiles
           email_confirmed_at: null, // Not available from profiles
           phone: null, // Not available from profiles
-          is_active: true, // Assume active from profiles
+          is_active: true, // Assume active
         };
       });
 
       console.log('Formatted users:', formattedUsers);
+      console.log('Total users found:', formattedUsers.length);
       setUsers(formattedUsers);
 
     } catch (error) {
