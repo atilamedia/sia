@@ -197,126 +197,87 @@ const Journal = () => {
             margin: 15mm;
             size: A4;
           }
-
+          
           body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0;
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
             font-size: 12px;
-            line-height: 1.4;
           }
           
           .letterhead {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 15px 0;
-            border-bottom: 3px solid #2563eb;
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
           }
           
-          .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+          .letterhead img {
+            width: 80px;
+            height: 80px;
+            float: left;
+            margin-right: 20px;
           }
           
-          .logo {
-            width: 70px;
-            height: 70px;
-            object-fit: contain;
+          .letterhead-content {
+            text-align: center;
+            display: inline-block;
+            width: calc(100% - 100px);
           }
           
-          .institution-info h1 {
-            color: #1e40af;
-            margin: 0;
+          .letterhead h1 {
             font-size: 18px;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          
-          .institution-info h2 {
-            color: #1e40af;
-            margin: 2px 0;
-            font-size: 14px;
-            font-weight: 600;
-          }
-          
-          .institution-info p {
-            margin: 1px 0;
-            font-size: 10px;
-            color: #64748b;
-          }
-          
-          .accreditation {
-            text-align: right;
-            font-size: 10px;
-          }
-          
-          .accreditation-badge {
-            background: linear-gradient(135deg, #1e40af, #3b82f6);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-          
-          .print-info {
-            color: #64748b;
-            font-size: 9px;
-            margin-top: 5px;
-          }
-          
-          .header { 
-            text-align: center; 
-            margin-bottom: 25px;
-          }
-          
-          .header h1 {
-            color: #1e40af;
             margin: 0 0 5px 0;
-            font-size: 20px;
-            font-weight: bold;
-            text-transform: uppercase;
+            color: #000;
           }
           
-          .header p {
+          .letterhead h2 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #000;
+          }
+          
+          .letterhead .address {
+            font-size: 11px;
+            line-height: 1.3;
+            margin: 5px 0;
+          }
+          
+          .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+          }
+          
+          .report-title { 
+            text-align: center; 
+            margin: 30px 0; 
+          }
+          
+          .report-title h1 {
+            font-size: 16px;
+            font-weight: bold;
             margin: 0;
-            color: #64748b;
-            font-size: 12px;
           }
           
           .summary { 
-            margin-bottom: 25px;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #2563eb;
+            margin-bottom: 30px; 
           }
           
-          .summary h2 {
-            color: #1e40af;
-            margin: 0 0 12px 0;
-            font-size: 16px;
+          .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
           }
           
           .summary-item { 
             display: flex; 
             justify-content: space-between; 
-            padding: 6px 0; 
-            border-bottom: 1px solid #e2e8f0;
-          }
-          
-          .summary-item:last-child {
-            border-bottom: none;
-            font-weight: bold;
-            background: white;
-            margin: 8px -15px -15px -15px;
-            padding: 12px 15px;
-            border-radius: 0 0 8px 8px;
+            padding: 8px 12px; 
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
           }
           
           .jurnal-item { 
@@ -327,7 +288,7 @@ const Journal = () => {
           }
           
           .jurnal-header { 
-            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            background: #f8fafc;
             padding: 12px 15px; 
             border-bottom: 1px solid #e2e8f0;
             display: flex;
@@ -348,26 +309,24 @@ const Journal = () => {
           
           .table { 
             width: 100%; 
-            border-collapse: collapse;
+            border-collapse: collapse; 
+            margin-bottom: 20px;
           }
           
           .table th, .table td { 
-            border: 1px solid #e2e8f0; 
-            padding: 8px 10px; 
-            text-align: left;
-            font-size: 11px;
+            border: 1px solid #ddd; 
+            padding: 6px; 
+            text-align: left; 
+            font-size: 10px;
           }
           
           .table th { 
-            background: #f8fafc;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            background-color: #f5f5f5; 
+            font-weight: bold;
           }
           
-          .table tbody tr:hover {
-            background: #f8fafc;
-          }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
           
           .debit { color: #3B82F6; font-weight: 500; }
           .credit { color: #10B981; font-weight: 500; }
@@ -380,69 +339,59 @@ const Journal = () => {
             background: #f8fafc;
           }
           
-          .footer {
-            margin-top: 25px;
-            text-align: center;
-            font-size: 9px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
-          }
-          
           @media print { 
             body { margin: 0; }
-            .jurnal-header { background: #f8fafc !important; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
           }
         </style>
       </head>
       <body>
-        <div class="letterhead">
-          <div class="logo-section">
-            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo" class="logo" />
-            <div class="institution-info">
-              <h1>Sekolah Tinggi Ilmu Kesehatan</h1>
-              <h2>STIKES Suaka Insan Banjarmasin</h2>
-              <p>Jl. HM. Cokrokusumo No.1A, Kec. Banjarmasin Barat, Kota Banjarmasin, Kalimantan Selatan 70114</p>
-              <p>Telp: (0511) 6749670 | Email: stikessuakainsan@gmail.com | Website: www.stikes-suakainsan.ac.id</p>
+        <div class="letterhead clearfix">
+          <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
+          <div class="letterhead-content">
+            <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
+            <h2>RSUD H. DAMANHURI BARABAI</h2>
+            <div class="address">
+              Jalan Murakata Nomor 4 Barabai 71314 Telepon/Faxmile : 08115008080<br>
+              Laman: www.rshdbarabai.com, Pos-el: rshd@hstkab.go.id<br>
+              Terakreditasi Paripurna Nomor: KARS-SERT/456/XI/2022
             </div>
-          </div>
-          <div class="accreditation">
-            <div class="accreditation-badge">Terakreditasi B</div>
-            <div class="print-info">Dicetak: ${currentDate}</div>
           </div>
         </div>
         
-        <div class="header">
-          <h1>Laporan Jurnal Umum</h1>
-          <p>Periode: ${dateRange}</p>
+        <div class="report-title">
+          <h1>LAPORAN JURNAL UMUM</h1>
         </div>
         
         <div class="summary">
-          <h2>Ringkasan</h2>
-          <div class="summary-item">
-            <span>Total Jurnal:</span>
-            <span><strong>${filteredData.length}</strong></span>
+          <h3>Ringkasan Jurnal</h3>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span>Total Jurnal:</span>
+              <span><strong>${filteredData.length}</strong></span>
+            </div>
+            <div class="summary-item">
+              <span>Total Entries:</span>
+              <span><strong>${totalEntries}</strong></span>
+            </div>
+            <div class="summary-item">
+              <span>Total Debit:</span>
+              <span class="debit"><strong>Rp ${totalDebit.toLocaleString('id-ID')}</strong></span>
+            </div>
+            <div class="summary-item">
+              <span>Total Kredit:</span>
+              <span class="credit"><strong>Rp ${totalKredit.toLocaleString('id-ID')}</strong></span>
+            </div>
           </div>
-          <div class="summary-item">
-            <span>Total Entries:</span>
-            <span><strong>${totalEntries}</strong></span>
-          </div>
-          <div class="summary-item">
-            <span>Total Debit:</span>
-            <span class="debit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalDebit)}</strong></span>
-          </div>
-          <div class="summary-item">
-            <span>Total Kredit:</span>
-            <span class="credit"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalKredit)}</strong></span>
-          </div>
-          <div class="summary-item">
-            <span>Status:</span>
-            <span class="${totalDebit === totalKredit ? 'balanced' : 'unbalanced'}"><strong>${totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}</strong></span>
+          <div style="text-align: center; margin-top: 10px; font-size: 11px;">
+            <strong>Periode:</strong> ${dateRange} | 
+            <strong>Filter:</strong> ${searchTerm || 'Semua Data'} | 
+            <strong>Status:</strong> <span class="${totalDebit === totalKredit ? 'balanced' : 'unbalanced'}">${totalDebit === totalKredit ? 'Balanced' : 'Unbalanced'}</span>
           </div>
         </div>
 
         <div>
-          <h2 style="color: #1e40af; margin-bottom: 15px; font-size: 16px;">Detail Jurnal</h2>
+          <h3>Detail Jurnal</h3>
           ${filteredData.map(jurnal => `
             <div class="jurnal-item">
               <div class="jurnal-header">
@@ -466,14 +415,14 @@ const Journal = () => {
                         <br><small style="color: #64748b;">${entry.m_rekening?.nama_rek || ''}</small>
                       </td>
                       <td>${entry.deskripsi}</td>
-                      <td class="debit text-right">${entry.debit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.debit) : '-'}</td>
-                      <td class="credit text-right">${entry.kredit > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(entry.kredit) : '-'}</td>
+                      <td class="debit text-right">${entry.debit > 0 ? 'Rp ' + entry.debit.toLocaleString('id-ID') : '-'}</td>
+                      <td class="credit text-right">${entry.kredit > 0 ? 'Rp ' + entry.kredit.toLocaleString('id-ID') : '-'}</td>
                     </tr>
                   `).join('') || ''}
                   <tr class="total-row">
                     <td colspan="2"><strong>Total:</strong></td>
-                    <td class="debit text-right"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0)}</strong></td>
-                    <td class="credit text-right"><strong>${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0)}</strong></td>
+                    <td class="debit text-right"><strong>Rp ${(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.debit || 0), 0) || 0).toLocaleString('id-ID')}</strong></td>
+                    <td class="credit text-right"><strong>Rp ${(jurnal.jurnal?.reduce((sum, entry) => sum + (entry.kredit || 0), 0) || 0).toLocaleString('id-ID')}</strong></td>
                   </tr>
                 </tbody>
               </table>
@@ -481,9 +430,9 @@ const Journal = () => {
           `).join('')}
         </div>
         
-        <div class="footer">
-          <p>Laporan ini digenerate secara otomatis oleh Sistem Informasi Akuntansi STIKES Suaka Insan Banjarmasin</p>
-          <p>Total ${filteredData.length} jurnal dengan ${totalEntries} entries</p>
+        <div style="margin-top: 30px; text-align: right; font-size: 10px;">
+          Dicetak pada: ${currentDate}<br>
+          Halaman ini berisi ${filteredData.length} jurnal dengan ${totalEntries} entries
         </div>
       </body>
       </html>
