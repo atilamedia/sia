@@ -151,10 +151,54 @@ export default function BukuKasUmum() {
               margin: 20px; 
               font-size: 12px;
             }
-            .header { 
+            .letterhead {
+              text-align: center;
+              margin-bottom: 40px;
+              border-bottom: 3px solid #000;
+              padding-bottom: 20px;
+            }
+            .letterhead img {
+              width: 80px;
+              height: 80px;
+              float: left;
+              margin-right: 20px;
+            }
+            .letterhead-content {
+              text-align: center;
+              display: inline-block;
+              width: calc(100% - 100px);
+            }
+            .letterhead h1 {
+              font-size: 18px;
+              font-weight: bold;
+              margin: 0 0 5px 0;
+              color: #000;
+            }
+            .letterhead h2 {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 0 0 10px 0;
+              color: #000;
+            }
+            .letterhead .address {
+              font-size: 11px;
+              line-height: 1.3;
+              margin: 5px 0;
+            }
+            .clearfix::after {
+              content: "";
+              display: table;
+              clear: both;
+            }
+            .report-title { 
               text-align: center; 
-              margin-bottom: 30px; 
+              margin: 30px 0; 
               page-break-inside: avoid;
+            }
+            .report-title h1 {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 0;
             }
             .period {
               text-align: center;
@@ -218,9 +262,21 @@ export default function BukuKasUmum() {
           </style>
         </head>
         <body>
-          <div class="header">
+          <div class="letterhead clearfix">
+            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
+            <div class="letterhead-content">
+              <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
+              <h2>RSUD H. DAMANHURI BARABAI</h2>
+              <div class="address">
+                Jalan Murakata Nomor 4 Barabai 71314 Telepon/Faxmile : 08115008080<br>
+                Laman: www.rshdbarabai.com, Pos-el: rshd@hstkab.go.id<br>
+                Terakreditasi Paripurna Nomor: KARS-SERT/456/XI/2022
+              </div>
+            </div>
+          </div>
+          
+          <div class="report-title">
             <h1>BUKU KAS UMUM</h1>
-            <h2>RSUD H. Damanhuri Barabai</h2>
           </div>
           
           <div class="period">
