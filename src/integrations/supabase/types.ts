@@ -721,14 +721,167 @@ export type Database = {
         }
         Relationships: []
       }
+      pages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          page_name: string
+          page_path: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_name: string
+          page_path: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_name?: string
+          page_path?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_page_permissions: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_export: boolean | null
+          can_view: boolean | null
+          description: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          page_name: string
+          page_path: string
+          user_id: string
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_export?: boolean | null
+          can_view?: boolean | null
+          description?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          page_name: string
+          page_path: string
+          user_id: string
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_export?: boolean | null
+          can_view?: boolean | null
+          description?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          page_name?: string
+          page_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_page_permissions: {
+        Args: { _user_id: string }
+        Returns: {
+          page_path: string
+          page_name: string
+          can_view: boolean
+          can_create: boolean
+          can_edit: boolean
+          can_delete: boolean
+          can_export: boolean
+          description: string
+        }[]
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      grant_default_permissions: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      user_has_page_permission: {
+        Args: {
+          _user_id: string
+          _page_path: string
+          _permission_type?: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "superadmin" | "admin" | "pengguna"
       jenis_aktivitas: "OPERASI" | "INVESTASI" | "PENDANAAN" | "KAS"
       jenis_rekening: "NERACA" | "LRA" | "LO"
       level_rekening:
@@ -854,6 +1007,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["superadmin", "admin", "pengguna"],
       jenis_aktivitas: ["OPERASI", "INVESTASI", "PENDANAAN", "KAS"],
       jenis_rekening: ["NERACA", "LRA", "LO"],
       level_rekening: ["Induk", "Detail Kas", "Detail Bk", "Detail", "Sendiri"],
