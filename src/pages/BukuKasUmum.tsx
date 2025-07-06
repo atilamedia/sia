@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 import * as XLSX from 'xlsx';
 
 export default function BukuKasUmum() {
@@ -19,6 +20,7 @@ export default function BukuKasUmum() {
     from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     to: new Date()
   });
+  const isMobile = useIsMobile();
 
   const { data: kasMasukData, isLoading: loadingKasMasuk } = useQuery({
     queryKey: ['kas-masuk', dateRange?.from, dateRange?.to],
@@ -38,7 +40,6 @@ export default function BukuKasUmum() {
     enabled: !!dateRange?.from && !!dateRange?.to
   });
 
-  // Gabungkan data kas masuk dan kas keluar
   const allTransactions = [
     ...(kasMasukData?.data || []).map(item => ({
       ...item,
@@ -62,7 +63,6 @@ export default function BukuKasUmum() {
     }))
   ].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime());
 
-  // Hitung running balance
   let runningBalance = 0;
   const transactionsWithBalance = allTransactions.map(transaction => {
     runningBalance += transaction.debit - transaction.kredit;
@@ -82,7 +82,6 @@ export default function BukuKasUmum() {
     try {
       const workbook = XLSX.utils.book_new();
       
-      // Summary sheet
       const summaryData = [
         ['BUKU KAS UMUM'],
         [''],
@@ -102,7 +101,6 @@ export default function BukuKasUmum() {
       const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
       XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
 
-      // Detail sheet
       if (transactionsWithBalance.length > 0) {
         const detailData = transactionsWithBalance.map(transaction => ({
           'Tanggal': format(new Date(transaction.tanggal), 'dd/MM/yyyy'),
@@ -372,83 +370,132 @@ export default function BukuKasUmum() {
 
   return (
     <Layout title="Buku Kas Umum">
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header with Filter and Export Buttons */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="space-y-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Buku Kas Umum</h1>
-            <p className="text-gray-600">Laporan kronologis semua transaksi kas</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Buku Kas Umum</h1>
+            <p className="text-sm md:text-base text-gray-600">Laporan kronologis semua transaksi kas</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Filter Periode */}
-            <div className="flex items-center gap-2">
+          {/* Mobile Controls */}
+          {isMobile ? (
+            <div className="space-y-3">
               <DateRangePicker
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
-                className="w-full sm:w-auto"
+                className="w-full"
               />
+              <div className="flex space-x-2">
+                <Button onClick={handleExportExcel} variant="outline" size="sm" className="flex-1">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Excel
+                </Button>
+                <Button onClick={handleExportPDF} variant="outline" size="sm" className="flex-1">
+                  <Download className="h-4 w-4 mr-2" />
+                  PDF
+                </Button>
+              </div>
             </div>
-            
-            {/* Export Buttons */}
-            <div className="flex gap-2">
-              <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
-                Excel
-              </Button>
-              <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                PDF
-              </Button>
+          ) : (
+            // Desktop Controls
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <DateRangePicker
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                  className="w-full sm:w-auto"
+                />
+                <div className="flex gap-2">
+                  <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4" />
+                    Excel
+                  </Button>
+                  <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Penerimaan</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Penerimaan</CardTitle>
+              <FileText className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                Rp {totalDebit.toLocaleString('id-ID')}
+              <div className="text-lg md:text-2xl font-bold text-green-600">
+                {isMobile ? 
+                  new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    notation: 'compact',
+                    compactDisplay: 'short',
+                    minimumFractionDigits: 0,
+                  }).format(totalDebit)
+                  :
+                  `Rp ${totalDebit.toLocaleString('id-ID')}`
+                }
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Pengeluaran</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Pengeluaran</CardTitle>
+              <FileText className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                Rp {totalKredit.toLocaleString('id-ID')}
+              <div className="text-lg md:text-2xl font-bold text-red-600">
+                {isMobile ? 
+                  new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    notation: 'compact',
+                    compactDisplay: 'short',
+                    minimumFractionDigits: 0,
+                  }).format(totalKredit)
+                  :
+                  `Rp ${totalKredit.toLocaleString('id-ID')}`
+                }
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Saldo Akhir</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Saldo Akhir</CardTitle>
+              <FileText className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${saldoAkhir >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                Rp {saldoAkhir.toLocaleString('id-ID')}
+              <div className={`text-lg md:text-2xl font-bold ${saldoAkhir >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {isMobile ? 
+                  new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    notation: 'compact',
+                    compactDisplay: 'short',
+                    minimumFractionDigits: 0,
+                  }).format(saldoAkhir)
+                  :
+                  `Rp ${saldoAkhir.toLocaleString('id-ID')}`
+                }
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs md:text-sm font-medium">Total Transaksi</CardTitle>
+              <FileText className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-lg md:text-2xl font-bold">
                 {allTransactions.length}
               </div>
             </CardContent>
@@ -458,14 +505,14 @@ export default function BukuKasUmum() {
         {/* Tabel BKU */}
         <Card>
           <CardHeader>
-            <CardTitle>Buku Kas Umum</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base md:text-lg">Buku Kas Umum</CardTitle>
+            <CardDescription className="text-sm">
               {dateRange?.from && dateRange?.to && (
                 <>Periode: {format(dateRange.from, 'dd MMMM yyyy', { locale: id })} - {format(dateRange.to, 'dd MMMM yyyy', { locale: id })}</>
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className={isMobile ? "p-0" : ""}>
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
@@ -474,60 +521,133 @@ export default function BukuKasUmum() {
                 </div>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tanggal</TableHead>
-                      <TableHead>Keterangan</TableHead>
-                      <TableHead>Rekening</TableHead>
-                      <TableHead>Pihak</TableHead>
-                      <TableHead className="text-right">Debit</TableHead>
-                      <TableHead className="text-right">Kredit</TableHead>
-                      <TableHead className="text-right">Saldo</TableHead>
-                      <TableHead>Jenis</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <>
+                {/* Mobile Card View */}
+                {isMobile ? (
+                  <div className="space-y-3 p-4">
                     {transactionsWithBalance.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                          Tidak ada data transaksi untuk periode yang dipilih
-                        </TableCell>
-                      </TableRow>
+                      <div className="text-center py-8 text-muted-foreground text-sm">
+                        Tidak ada data transaksi untuk periode yang dipilih
+                      </div>
                     ) : (
                       transactionsWithBalance.map((transaction, index) => (
-                        <TableRow key={`${transaction.type}-${transaction.id_km || transaction.id_kk}-${index}`}>
-                          <TableCell>
-                            {format(new Date(transaction.tanggal), 'dd/MM/yyyy')}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {transaction.keterangan}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {transaction.nama_rek}
-                          </TableCell>
-                          <TableCell>{transaction.pihak}</TableCell>
-                          <TableCell className="text-right">
-                            {transaction.debit > 0 ? `Rp ${transaction.debit.toLocaleString('id-ID')}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {transaction.kredit > 0 ? `Rp ${transaction.kredit.toLocaleString('id-ID')}` : '-'}
-                          </TableCell>
-                          <TableCell className={`text-right font-medium ${transaction.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            Rp {transaction.saldo.toLocaleString('id-ID')}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={transaction.type === 'masuk' ? 'default' : 'destructive'}>
-                              {transaction.type === 'masuk' ? 'Masuk' : 'Keluar'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
+                        <Card key={`${transaction.type}-${transaction.id_km || transaction.id_kk}-${index}`} className="border-l-4 border-l-blue-500">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">
+                                  {format(new Date(transaction.tanggal), 'dd/MM/yyyy')}
+                                </span>
+                                <Badge variant={transaction.type === 'masuk' ? 'default' : 'destructive'} className="text-xs">
+                                  {transaction.type === 'masuk' ? 'Masuk' : 'Keluar'}
+                                </Badge>
+                              </div>
+                              <div className={`text-sm font-medium ${transaction.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Saldo: {new Intl.NumberFormat('id-ID', {
+                                  style: 'currency',
+                                  currency: 'IDR',
+                                  notation: 'compact',
+                                  compactDisplay: 'short',
+                                  minimumFractionDigits: 0,
+                                }).format(transaction.saldo)}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-2">
+                            <div>
+                              <p className="text-sm font-medium">{transaction.keterangan}</p>
+                              <p className="text-xs text-muted-foreground">{transaction.nama_rek}</p>
+                              <p className="text-xs text-muted-foreground">Pihak: {transaction.pihak}</p>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t">
+                              <div className="text-right">
+                                {transaction.debit > 0 && (
+                                  <p className="text-blue-600 font-medium text-sm">
+                                    Debit: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(transaction.debit)}
+                                  </p>
+                                )}
+                                {transaction.kredit > 0 && (
+                                  <p className="text-red-600 font-medium text-sm">
+                                    Kredit: {new Intl.NumberFormat('id-ID', {
+                                      style: 'currency',
+                                      currency: 'IDR',
+                                      notation: 'compact',
+                                      compactDisplay: 'short',
+                                      minimumFractionDigits: 0,
+                                    }).format(transaction.kredit)}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       ))
                     )}
-                  </TableBody>
-                </Table>
-              </div>
+                  </div>
+                ) : (
+                  // Desktop Table View
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tanggal</TableHead>
+                          <TableHead>Keterangan</TableHead>
+                          <TableHead>Rekening</TableHead>
+                          <TableHead>Pihak</TableHead>
+                          <TableHead className="text-right">Debit</TableHead>
+                          <TableHead className="text-right">Kredit</TableHead>
+                          <TableHead className="text-right">Saldo</TableHead>
+                          <TableHead>Jenis</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactionsWithBalance.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                              Tidak ada data transaksi untuk periode yang dipilih
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          transactionsWithBalance.map((transaction, index) => (
+                            <TableRow key={`${transaction.type}-${transaction.id_km || transaction.id_kk}-${index}`}>
+                              <TableCell>
+                                {format(new Date(transaction.tanggal), 'dd/MM/yyyy')}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {transaction.keterangan}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {transaction.nama_rek}
+                              </TableCell>
+                              <TableCell>{transaction.pihak}</TableCell>
+                              <TableCell className="text-right">
+                                {transaction.debit > 0 ? `Rp ${transaction.debit.toLocaleString('id-ID')}` : '-'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {transaction.kredit > 0 ? `Rp ${transaction.kredit.toLocaleString('id-ID')}` : '-'}
+                              </TableCell>
+                              <TableCell className={`text-right font-medium ${transaction.saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Rp {transaction.saldo.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={transaction.type === 'masuk' ? 'default' : 'destructive'}>
+                                  {transaction.type === 'masuk' ? 'Masuk' : 'Keluar'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
