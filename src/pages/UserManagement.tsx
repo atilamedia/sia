@@ -37,12 +37,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { User, Settings, Shield, Edit, Trash2, Key } from 'lucide-react';
+import { User, Settings, Shield, Edit, Trash2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AddUserDialog } from '@/components/user-management/AddUserDialog';
 import { EditUserDialog } from '@/components/user-management/EditUserDialog';
 import { DeleteUserDialog } from '@/components/user-management/DeleteUserDialog';
-import { ChangePasswordDialog } from '@/components/user-management/ChangePasswordDialog';
 
 type UserRole = 'superadmin' | 'admin' | 'pengguna';
 
@@ -80,10 +79,8 @@ export default function UserManagement() {
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
-  const [changingPasswordUser, setChangingPasswordUser] = useState<UserData | null>(null);
 
   // Redirect if not superadmin
   if (userRole !== 'superadmin') {
@@ -104,56 +101,47 @@ export default function UserManagement() {
     try {
       console.log('Fetching users...');
       
-      // Get all users from auth.users via admin API
-      const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        toast.error('Gagal memuat data pengguna dari auth');
-        return;
-      }
-
-      console.log('Auth users data:', authUsersData);
-
-      if (!authUsersData?.users || authUsersData.users.length === 0) {
-        console.log('No auth users found');
-        setUsers([]);
-        return;
-      }
-
-      // Get profiles for additional user info
+      // First get all profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
+        toast.error('Gagal memuat data profil pengguna');
+        return;
       }
 
       console.log('Profiles data:', profilesData);
 
-      // Get user roles
+      if (!profilesData || profilesData.length === 0) {
+        console.log('No profiles found');
+        setUsers([]);
+        return;
+      }
+
+      // Then get user roles
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
+        toast.error('Gagal memuat data role pengguna');
+        return;
       }
 
       console.log('Roles data:', rolesData);
 
       // Combine the data
-      const formattedUsers = authUsersData.users.map((authUser: any) => {
-        const profile = profilesData?.find((p: any) => p.id === authUser.id);
-        const userRole = rolesData?.find((role: any) => role.user_id === authUser.id);
-        
+      const formattedUsers = profilesData.map((profile: any) => {
+        const userRole = rolesData?.find((role: any) => role.user_id === profile.id);
         return {
-          id: authUser.id,
-          email: authUser.email,
-          full_name: profile?.full_name || authUser.user_metadata?.full_name || null,
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
           role: (userRole?.role || 'pengguna') as UserRole,
-          created_at: authUser.created_at,
+          created_at: profile.created_at,
         };
       });
 
@@ -300,11 +288,6 @@ export default function UserManagement() {
   const openDeleteDialog = (user: UserData) => {
     setDeletingUser(user);
     setDeleteDialogOpen(true);
-  };
-
-  const openChangePasswordDialog = (user: UserData) => {
-    setChangingPasswordUser(user);
-    setChangePasswordDialogOpen(true);
   };
 
   const getPermissionValue = (pagePath: string, permissionType: string) => {
@@ -497,14 +480,6 @@ export default function UserManagement() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openChangePasswordDialog(user)}
-                                className="h-8 px-2 text-xs"
-                              >
-                                <Key className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
                                 onClick={() => openDeleteDialog(user)}
                                 className="h-8 px-2 text-xs text-destructive hover:text-destructive"
                               >
@@ -538,7 +513,7 @@ export default function UserManagement() {
                               <TableHead className="min-w-[120px] hidden lg:table-cell">
                                 <div className="text-xs sm:text-sm font-semibold">Tanggal Daftar</div>
                               </TableHead>
-                              <TableHead className="min-w-[160px]">
+                              <TableHead className="min-w-[120px]">
                                 <div className="text-xs sm:text-sm font-semibold">Aksi</div>
                               </TableHead>
                             </TableRow>
@@ -607,15 +582,6 @@ export default function UserManagement() {
                                     >
                                       <Edit className="h-3 w-3" />
                                       <span className="hidden sm:inline ml-1">Edit</span>
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => openChangePasswordDialog(user)}
-                                      className="h-8 px-2 text-xs"
-                                    >
-                                      <Key className="h-3 w-3" />
-                                      <span className="hidden sm:inline ml-1">Password</span>
                                     </Button>
                                     <Button
                                       variant="outline"
@@ -699,13 +665,6 @@ export default function UserManagement() {
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           onUserUpdated={fetchUsers}
-        />
-
-        {/* Change Password Dialog */}
-        <ChangePasswordDialog
-          user={changingPasswordUser}
-          open={changePasswordDialogOpen}
-          onOpenChange={setChangePasswordDialogOpen}
         />
 
         {/* Delete User Dialog */}
