@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Download, FileText, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
@@ -313,7 +314,7 @@ export default function LaporanRealisasiAnggaran() {
         </head>
         <body>
           <div class="letterhead clearfix">
-            <img src="/lovable-uploads/2a346c8a-08ed-4668-88f3-0cc3f58ef75a.png" alt="Logo RSUD" />
+            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
             <div class="letterhead-content">
               <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
               <h2>RSUD H. DAMANHURI BARABAI</h2>
