@@ -402,9 +402,9 @@ export default function Anggaran() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             {/* Pilih Tahun */}
             <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
                 <SelectTrigger className="w-32">
+                  <Calendar className="h-4 w-4 text-gray-500 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -419,14 +419,6 @@ export default function Anggaran() {
             
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={handleCreateAnggaran} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Tambah</span>
-              </Button>
-              <Button onClick={handleExportTemplate} variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Template</span>
-              </Button>
               <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
                 <FileSpreadsheet className="h-4 w-4" />
                 <span className="hidden sm:inline">Excel</span>
@@ -435,11 +427,19 @@ export default function Anggaran() {
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">PDF</span>
               </Button>
+              <Button onClick={handleExportTemplate} variant="outline" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Template</span>
+              </Button>
               <Button variant="outline" className="flex items-center gap-2" asChild>
                 <label htmlFor="excel-import" className="cursor-pointer">
                   <Upload className="h-4 w-4" />
                   <span className="hidden sm:inline">Import</span>
                 </label>
+              </Button>
+              <Button onClick={handleCreateAnggaran} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Tambah</span>
               </Button>
               <input
                 id="excel-import"
