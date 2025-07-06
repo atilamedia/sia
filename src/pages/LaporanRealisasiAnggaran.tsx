@@ -314,7 +314,7 @@ export default function LaporanRealisasiAnggaran() {
         </head>
         <body>
           <div class="letterhead clearfix">
-            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
+            <img src="/sia/uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
             <div class="letterhead-content">
               <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
               <h2>RSUD H. DAMANHURI BARABAI</h2>
