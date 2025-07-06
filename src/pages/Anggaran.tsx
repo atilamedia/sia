@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Download, Upload, Plus, Edit, Trash2 } from "lucide-react";
+import { Calendar, Download, Upload, Plus, Edit, Trash2, FileSpreadsheet, FileText } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import { AnggaranModal } from "@/components/anggaran/AnggaranModal";
 import { DeleteAnggaranDialog } from "@/components/anggaran/DeleteAnggaranDialog";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Anggaran() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -60,6 +61,8 @@ export default function Anggaran() {
     };
   });
 
+  const totalAnggaran = budgetData.reduce((sum, item) => sum + item.total, 0);
+
   const handleExportTemplate = () => {
     try {
       const templateData = rekening.map(rek => ({
@@ -80,6 +83,243 @@ export default function Anggaran() {
     } catch (error) {
       console.error('Error exporting template:', error);
       toast.error("Gagal mengunduh template");
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const workbook = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ['ANGGARAN TAHUNAN'],
+        ['RSUD H. Damanhuri Barabai'],
+        [''],
+        ['Tahun Anggaran:', selectedYear],
+        ['Total Anggaran:', `Rp ${totalAnggaran.toLocaleString('id-ID')}`],
+        ['Jumlah Rekening:', budgetData.length],
+        [''],
+        ['Tanggal Cetak:', new Date().toLocaleString('id-ID')]
+      ];
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+
+      // Detail sheet
+      if (budgetData.length > 0) {
+        const detailData = budgetData.map(item => ({
+          'Kode Rekening': item.kode_rek,
+          'Nama Rekening': item.nama_rek,
+          'Jenis Rekening': item.jenis_rek,
+          'Total Anggaran': item.total,
+          'Status': item.tanda === 'Y' ? 'Aktif' : 'Tidak Aktif',
+          'Validasi': item.validasi_realisasi === 'Y' ? 'Valid' : 'Belum Valid',
+          'User': item.usernya
+        }));
+        
+        const detailSheet = XLSX.utils.json_to_sheet(detailData);
+        XLSX.utils.book_append_sheet(workbook, detailSheet, 'Detail Anggaran');
+      }
+
+      const fileName = `anggaran-${selectedYear}-${Date.now()}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      toast.success("Excel berhasil diunduh!");
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error("Gagal mengekspor Excel");
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error("Gagal membuka jendela cetak. Pastikan popup tidak diblokir.");
+        return;
+      }
+
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Anggaran Tahunan ${selectedYear}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              font-size: 12px;
+            }
+            .letterhead {
+              text-align: center;
+              margin-bottom: 40px;
+              border-bottom: 3px solid #000;
+              padding-bottom: 20px;
+            }
+            .letterhead img {
+              width: 80px;
+              height: 80px;
+              float: left;
+              margin-right: 20px;
+            }
+            .letterhead-content {
+              text-align: center;
+              display: inline-block;
+              width: calc(100% - 100px);
+            }
+            .letterhead h1 {
+              font-size: 18px;
+              font-weight: bold;
+              margin: 0 0 5px 0;
+              color: #000;
+            }
+            .letterhead h2 {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 0 0 10px 0;
+              color: #000;
+            }
+            .letterhead .address {
+              font-size: 11px;
+              line-height: 1.3;
+              margin: 5px 0;
+            }
+            .clearfix::after {
+              content: "";
+              display: table;
+              clear: both;
+            }
+            .report-title { 
+              text-align: center; 
+              margin: 30px 0; 
+            }
+            .report-title h1 {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 0;
+            }
+            .summary { 
+              margin-bottom: 30px; 
+            }
+            .summary-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 20px;
+              margin-bottom: 20px;
+            }
+            .summary-item { 
+              display: flex; 
+              justify-content: space-between; 
+              padding: 8px 12px; 
+              border: 1px solid #ddd;
+              background-color: #f9f9f9;
+            }
+            .table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 20px;
+            }
+            .table th, .table td { 
+              border: 1px solid #ddd; 
+              padding: 6px; 
+              text-align: left; 
+              font-size: 10px;
+            }
+            .table th { 
+              background-color: #f5f5f5; 
+              font-weight: bold;
+            }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            @media print { 
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="letterhead clearfix">
+            <img src="/sia/uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
+            <div class="letterhead-content">
+              <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
+              <h2>RSUD H. DAMANHURI BARABAI</h2>
+              <div class="address">
+                Jalan Murakata Nomor 4 Barabai 71314 Telepon/Faxmile : 08115008080<br>
+                Laman: www.rshdbarabai.com, Pos-el: rshd@hstkab.go.id<br>
+                Terakreditasi Paripurna Nomor: KARS-SERT/456/XI/2022
+              </div>
+            </div>
+          </div>
+          
+          <div class="report-title">
+            <h1>ANGGARAN TAHUNAN</h1>
+            <h3>Tahun Anggaran ${selectedYear}</h3>
+          </div>
+          
+          <div class="summary">
+            <h3>Ringkasan</h3>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span>Total Anggaran:</span>
+                <span><strong>Rp ${totalAnggaran.toLocaleString('id-ID')}</strong></span>
+              </div>
+              <div class="summary-item">
+                <span>Jumlah Rekening:</span>
+                <span><strong>${budgetData.length}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3>Detail Anggaran</h3>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Kode Rekening</th>
+                  <th>Nama Rekening</th>
+                  <th>Jenis</th>
+                  <th class="text-right">Total Anggaran</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Validasi</th>
+                  <th>User</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${budgetData.length === 0 ? 
+                  '<tr><td colspan="7" class="text-center">Tidak ada data anggaran</td></tr>' :
+                  budgetData.map(item => `
+                    <tr>
+                      <td>${item.kode_rek}</td>
+                      <td>${item.nama_rek}</td>
+                      <td>${item.jenis_rek}</td>
+                      <td class="text-right">Rp ${item.total.toLocaleString('id-ID')}</td>
+                      <td class="text-center">${item.tanda === 'Y' ? 'Aktif' : 'Tidak Aktif'}</td>
+                      <td class="text-center">${item.validasi_realisasi === 'Y' ? 'Valid' : 'Belum Valid'}</td>
+                      <td>${item.usernya}</td>
+                    </tr>
+                  `).join('')
+                }
+              </tbody>
+            </table>
+          </div>
+          
+          <div style="margin-top: 30px; text-align: right; font-size: 10px;">
+            Dicetak pada: ${new Date().toLocaleString('id-ID')}
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+      
+      toast.success("PDF berhasil disiapkan untuk dicetak!");
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error("Gagal mengekspor PDF");
     }
   };
 
@@ -178,19 +418,27 @@ export default function Anggaran() {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button onClick={handleCreateAnggaran} className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Tambah
+                <span className="hidden sm:inline">Tambah</span>
               </Button>
               <Button onClick={handleExportTemplate} variant="outline" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
-                Template
+                <span className="hidden sm:inline">Template</span>
+              </Button>
+              <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                <span className="hidden sm:inline">Excel</span>
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">PDF</span>
               </Button>
               <Button variant="outline" className="flex items-center gap-2" asChild>
                 <label htmlFor="excel-import" className="cursor-pointer">
                   <Upload className="h-4 w-4" />
-                  Import
+                  <span className="hidden sm:inline">Import</span>
                 </label>
               </Button>
               <input
@@ -204,13 +452,20 @@ export default function Anggaran() {
           </div>
         </div>
 
-        {/* Tabel Anggaran */}
+        {/* Summary Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Daftar Anggaran per Rekening</CardTitle>
+            <CardTitle>Ringkasan Anggaran {selectedYear}</CardTitle>
             <CardDescription>
-              Tahun Anggaran: {selectedYear} • Total Anggaran: {budgetData.length}
+              Total Anggaran: {formatCurrency(totalAnggaran)} • Jumlah Rekening: {budgetData.length}
             </CardDescription>
+          </CardHeader>
+        </Card>
+
+        {/* Desktop Table View */}
+        <Card className="hidden lg:block">
+          <CardHeader>
+            <CardTitle>Daftar Anggaran per Rekening</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -259,7 +514,7 @@ export default function Anggaran() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            Rp {item.total.toLocaleString('id-ID')}
+                            {formatCurrency(item.total)}
                           </TableCell>
                           <TableCell>
                             <Badge 
@@ -307,6 +562,99 @@ export default function Anggaran() {
             )}
           </CardContent>
         </Card>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {isLoading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-500">Memuat data...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : budgetData.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8 text-gray-500">
+                Belum ada data anggaran untuk tahun {selectedYear}
+              </CardContent>
+            </Card>
+          ) : (
+            budgetData.map((item) => (
+              <Card key={item.kode_rek}>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="font-mono text-sm font-medium">{item.kode_rek}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{item.nama_rek}</p>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditAnggaran(item)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteAnggaran(item)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-gray-500">Jenis:</span>
+                        <div className="mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {item.jenis_rek}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Anggaran:</span>
+                        <p className="font-medium mt-1">{formatCurrency(item.total)}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Status:</span>
+                        <div className="mt-1">
+                          <Badge 
+                            variant={item.tanda === 'Y' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {item.tanda === 'Y' ? 'Aktif' : 'Tidak Aktif'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Validasi:</span>
+                        <div className="mt-1">
+                          <Badge 
+                            variant={item.validasi_realisasi === 'Y' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {item.validasi_realisasi === 'Y' ? 'Valid' : 'Belum Valid'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t">
+                      <span className="text-xs text-gray-500">User: {item.usernya}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
 
         {/* Modal untuk input/edit anggaran */}
         <AnggaranModal
