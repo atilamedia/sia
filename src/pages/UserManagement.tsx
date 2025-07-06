@@ -131,8 +131,7 @@ export default function UserManagement() {
           id: profile.id,
           email: profile.email,
           full_name: profile.full_name,
-          // role: (userRole?.role || 'pengguna') as UserRole,
-          role:  role.role,
+          role: (userRole?.role || 'pengguna') as UserRole,
           created_at: profile.created_at,
           last_sign_in_at: null, // Not available from profiles
           email_confirmed_at: null, // Not available from profiles
