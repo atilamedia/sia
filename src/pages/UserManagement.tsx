@@ -1,9 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -19,7 +18,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Drawer,
@@ -40,8 +38,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { User, Settings, Shield } from 'lucide-react';
+import { User, Settings, Shield, Edit, Trash2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AddUserDialog } from '@/components/user-management/AddUserDialog';
+import { EditUserDialog } from '@/components/user-management/EditUserDialog';
+import { DeleteUserDialog } from '@/components/user-management/DeleteUserDialog';
 
 type UserRole = 'superadmin' | 'admin' | 'pengguna';
 
@@ -76,8 +77,11 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userPermissions, setUserPermissions] = useState<UserPermission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserData | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
 
   // Redirect if not superadmin
   if (userRole !== 'superadmin') {
@@ -277,6 +281,16 @@ export default function UserManagement() {
     setPermissionDialogOpen(true);
   };
 
+  const openEditDialog = (user: UserData) => {
+    setEditingUser(user);
+    setEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (user: UserData) => {
+    setDeletingUser(user);
+    setDeleteDialogOpen(true);
+  };
+
   const getPermissionValue = (pagePath: string, permissionType: string) => {
     const permission = userPermissions.find(p => p.page_path === pagePath);
     return permission ? permission[permissionType as keyof UserPermission] : false;
@@ -388,6 +402,8 @@ export default function UserManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
+            <AddUserDialog onUserAdded={fetchUsers} />
+            
             {users.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 text-sm">Tidak ada data pengguna yang ditemukan</p>
@@ -419,7 +435,7 @@ export default function UserManagement() {
                           <TableHead className="min-w-[120px] hidden lg:table-cell">
                             <div className="text-xs sm:text-sm font-semibold">Tanggal Daftar</div>
                           </TableHead>
-                          <TableHead className="min-w-[80px]">
+                          <TableHead className="min-w-[120px]">
                             <div className="text-xs sm:text-sm font-semibold">Aksi</div>
                           </TableHead>
                         </TableRow>
@@ -470,16 +486,35 @@ export default function UserManagement() {
                               </div>
                             </TableCell>
                             <TableCell className="p-2 sm:p-4">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openPermissionDialog(user)}
-                                className="w-full sm:w-auto h-8 text-xs"
-                              >
-                                <Settings className="h-3 w-3 mr-1" />
-                                <span className="hidden xs:inline">Permission</span>
-                                <span className="xs:hidden">Izin</span>
-                              </Button>
+                              <div className="flex gap-1 sm:gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openPermissionDialog(user)}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  <Settings className="h-3 w-3" />
+                                  <span className="hidden sm:inline ml-1">Permission</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditDialog(user)}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                  <span className="hidden sm:inline ml-1">Edit</span>
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDeleteDialog(user)}
+                                  className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                  <span className="hidden sm:inline ml-1">Hapus</span>
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -543,6 +578,22 @@ export default function UserManagement() {
             </DrawerContent>
           </Drawer>
         )}
+
+        {/* Edit User Dialog */}
+        <EditUserDialog
+          user={editingUser}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          onUserUpdated={fetchUsers}
+        />
+
+        {/* Delete User Dialog */}
+        <DeleteUserDialog
+          user={deletingUser}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onUserDeleted={fetchUsers}
+        />
       </div>
     </Layout>
   );
