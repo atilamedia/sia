@@ -79,193 +79,103 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
           }
           
           body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0;
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
             font-size: 12px;
-            line-height: 1.4;
           }
           
           .letterhead {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 15px 0;
-            border-bottom: 3px solid #2563eb;
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
           }
           
-          .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+          .letterhead img {
+            width: 80px;
+            height: 80px;
+            float: left;
+            margin-right: 20px;
           }
           
-          .logo {
-            width: 70px;
-            height: 70px;
-            object-fit: contain;
+          .letterhead-content {
+            text-align: center;
+            display: inline-block;
+            width: calc(100% - 100px);
           }
           
-          .institution-info h1 {
-            color: #1e40af;
-            margin: 0;
+          .letterhead h1 {
             font-size: 18px;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          
-          .institution-info h2 {
-            color: #1e40af;
-            margin: 2px 0;
-            font-size: 14px;
-            font-weight: 600;
-          }
-          
-          .institution-info p {
-            margin: 1px 0;
-            font-size: 10px;
-            color: #64748b;
-          }
-          
-          .accreditation {
-            text-align: right;
-            font-size: 10px;
-          }
-          
-          .accreditation-badge {
-            background: linear-gradient(135deg, #1e40af, #3b82f6);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          }
-          
-          .print-info {
-            color: #64748b;
-            font-size: 9px;
-            margin-top: 5px;
-          }
-          
-          .header { 
-            text-align: center; 
-            margin-bottom: 30px;
-          }
-          
-          .header h1 {
-            color: #1e40af;
             margin: 0 0 5px 0;
-            font-size: 20px;
-            font-weight: bold;
-            text-transform: uppercase;
+            color: #000;
           }
           
-          .header p {
+          .letterhead h2 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #000;
+          }
+          
+          .letterhead .address {
+            font-size: 11px;
+            line-height: 1.3;
+            margin: 5px 0;
+          }
+          
+          .clearfix::after {
+            content: "";
+            display: table;
+            clear: both;
+          }
+          
+          .report-title { 
+            text-align: center; 
+            margin: 30px 0; 
+          }
+          
+          .report-title h1 {
+            font-size: 16px;
+            font-weight: bold;
             margin: 0;
-            color: #64748b;
-            font-size: 12px;
           }
           
           .summary { 
-            margin-bottom: 25px;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #2563eb;
-          }
-          
-          .summary h2 {
-            color: #1e40af;
-            margin: 0 0 12px 0;
-            font-size: 16px;
+            margin-bottom: 30px; 
           }
           
           .summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
           }
           
           .summary-item { 
-            text-align: center;
-            padding: 12px;
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          }
-          
-          .summary-item .label {
-            font-size: 10px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
-          }
-          
-          .summary-item .value {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1e293b;
-          }
-          
-          .summary-item.currency .value {
-            color: #059669;
-          }
-          
-          .filters {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-            font-size: 10px;
-            color: #64748b;
-          }
-          
-          .table-container {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 12px; 
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
           }
           
           .table { 
             width: 100%; 
-            border-collapse: collapse;
-            margin: 0;
-          }
-          
-          .table thead {
-            background: #1e40af;
-            color: white;
+            border-collapse: collapse; 
+            margin-bottom: 20px;
           }
           
           .table th, .table td { 
-            padding: 10px 6px; 
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-          }
-          
-          .table th {
-            font-weight: 600;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          
-          .table td {
+            border: 1px solid #ddd; 
+            padding: 6px; 
+            text-align: left; 
             font-size: 10px;
           }
           
-          .table tbody tr:nth-child(even) {
-            background: #f8fafc;
-          }
-          
-          .table tbody tr:hover {
-            background: #e2e8f0;
+          .table th { 
+            background-color: #f5f5f5; 
+            font-weight: bold;
           }
           
           .text-center { text-align: center; }
@@ -290,15 +200,6 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
           .badge-lra { background: #fed7aa; color: #9a3412; }
           .badge-lo { background: #fecaca; color: #991b1b; }
           
-          .footer {
-            margin-top: 25px;
-            text-align: center;
-            font-size: 9px;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 12px;
-          }
-          
           @media print { 
             body { margin: 0; }
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
@@ -306,58 +207,51 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
         </style>
       </head>
       <body>
-        <div class="letterhead">
-          <div class="logo-section">
-            <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo" class="logo" />
-            <div class="institution-info">
-              <h1>Sekolah Tinggi Ilmu Kesehatan</h1>
-              <h2>STIKES Suaka Insan Banjarmasin</h2>
-              <p>Jl. HM. Cokrokusumo No.1A, Kec. Banjarmasin Barat, Kota Banjarmasin, Kalimantan Selatan 70114</p>
-              <p>Telp: (0511) 6749670 | Email: stikessuakainsan@gmail.com | Website: www.stikes-suakainsan.ac.id</p>
+        <div class="letterhead clearfix">
+          <img src="/lovable-uploads/3acae2a7-53c9-48ab-9ca1-08dc49ee0f14.png" alt="Logo RSUD" />
+          <div class="letterhead-content">
+            <h1>PEMERINTAH KABUPATEN HULU SUNGAI TENGAH</h1>
+            <h2>RSUD H. DAMANHURI BARABAI</h2>
+            <div class="address">
+              Jalan Murakata Nomor 4 Barabai 71314 Telepon/Faxmile : 08115008080<br>
+              Laman: www.rshdbarabai.com, Pos-el: rshd@hstkab.go.id<br>
+              Terakreditasi Paripurna Nomor: KARS-SERT/456/XI/2022
             </div>
-          </div>
-          <div class="accreditation">
-            <div class="accreditation-badge">Terakreditasi B</div>
-            <div class="print-info">Dicetak: ${currentDate}</div>
           </div>
         </div>
         
-        <div class="header">
-          <h1>Laporan Daftar Akun Rekening</h1>
-          <p>Sistem Informasi Akuntansi</p>
+        <div class="report-title">
+          <h1>LAPORAN DAFTAR AKUN REKENING</h1>
         </div>
         
         <div class="summary">
-          <h2>Ringkasan Akun</h2>
+          <h3>Ringkasan Akun</h3>
           <div class="summary-grid">
             <div class="summary-item">
-              <div class="label">Total Akun</div>
-              <div class="value">${filteredAccounts.length}</div>
-            </div>
-            <div class="summary-item currency">
-              <div class="label">Total Saldo</div>
-              <div class="value">${new Intl.NumberFormat('id-ID', { 
-                style: 'currency', 
-                currency: 'IDR', 
-                minimumFractionDigits: 0 
-              }).format(totalSaldo)}</div>
+              <span>Total Akun:</span>
+              <span><strong>${filteredAccounts.length}</strong></span>
             </div>
             <div class="summary-item">
-              <div class="label">Akun Neraca</div>
-              <div class="value">${rekeningNeraca}</div>
+              <span>Total Saldo:</span>
+              <span><strong>Rp ${totalSaldo.toLocaleString('id-ID')}</strong></span>
             </div>
             <div class="summary-item">
-              <div class="label">Akun LRA</div>
-              <div class="value">${rekeningLRA}</div>
+              <span>Akun Neraca:</span>
+              <span><strong>${rekeningNeraca}</strong></span>
+            </div>
+            <div class="summary-item">
+              <span>Akun LRA:</span>
+              <span><strong>${rekeningLRA}</strong></span>
             </div>
           </div>
-          <div class="filters">
-            <span><strong>Filter Pencarian:</strong> ${searchTerm || 'Semua Data'}</span>
-            <span><strong>Jumlah Data:</strong> ${filteredAccounts.length} dari ${accounts.length} akun</span>
+          <div style="text-align: center; margin-top: 10px; font-size: 11px;">
+            <strong>Filter Pencarian:</strong> ${searchTerm || 'Semua Data'} | 
+            <strong>Jumlah Data:</strong> ${filteredAccounts.length} dari ${accounts.length} akun
           </div>
         </div>
 
-        <div class="table-container">
+        <div>
+          <h3>Detail Akun</h3>
           <table class="table">
             <thead>
               <tr>
@@ -393,20 +287,16 @@ export const AccountExport = ({ accounts, searchTerm }: AccountExportProps) => {
                     }">${account.jenis_rek || 'NERACA'}</span>
                   </td>
                   <td class="text-center">${account.rek_induk && account.rek_induk.trim() !== '' && account.rek_induk !== ' ' ? account.rek_induk : '-'}</td>
-                  <td class="text-right"><strong>${new Intl.NumberFormat('id-ID', { 
-                    style: 'currency', 
-                    currency: 'IDR', 
-                    minimumFractionDigits: 0 
-                  }).format(account.saldo || 0)}</strong></td>
+                  <td class="text-right"><strong>Rp ${(account.saldo || 0).toLocaleString('id-ID')}</strong></td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
         
-        <div class="footer">
-          <p>Laporan ini digenerate secara otomatis oleh Sistem Informasi Akuntansi STIKES Suaka Insan Banjarmasin</p>
-          <p>Halaman ini berisi ${filteredAccounts.length} data akun rekening</p>
+        <div style="margin-top: 30px; text-align: right; font-size: 10px;">
+          Dicetak pada: ${currentDate}<br>
+          Halaman ini berisi ${filteredAccounts.length} data akun rekening
         </div>
       </body>
       </html>
