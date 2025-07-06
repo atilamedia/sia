@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Download, FileText, FileSpreadsheet, TrendingUp, TrendingDown } from "lucide-react";
@@ -14,6 +13,7 @@ import { id } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LRAData {
   kode_rek: string;
@@ -26,6 +26,7 @@ interface LRAData {
 }
 
 export default function LaporanRealisasiAnggaran() {
+  const isMobile = useIsMobile();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(new Date().getFullYear(), 0, 1), // Awal tahun
     to: new Date()
@@ -425,17 +426,17 @@ export default function LaporanRealisasiAnggaran() {
 
   return (
     <Layout title="Laporan Realisasi Anggaran">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
         {/* Header with Filter and Export Buttons */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Laporan Realisasi Anggaran (LRA)</h1>
-            <p className="text-gray-600">Perbandingan anggaran dengan realisasi tahun {currentYear}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Laporan Realisasi Anggaran (LRA)</h1>
+            <p className="text-sm sm:text-base text-gray-600">Perbandingan anggaran dengan realisasi tahun {currentYear}</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
             {/* Filter Periode */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <DateRangePicker
                 dateRange={dateRange}
                 onDateRangeChange={setDateRange}
@@ -444,149 +445,219 @@ export default function LaporanRealisasiAnggaran() {
             </div>
             
             {/* Export Buttons */}
-            <div className="flex gap-2">
-              <Button onClick={handleExportExcel} variant="outline" className="flex items-center gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleExportExcel} 
+                variant="outline" 
+                className="flex items-center gap-2 flex-1 sm:flex-none"
+                size={isMobile ? "sm" : "default"}
+              >
                 <FileSpreadsheet className="h-4 w-4" />
-                Excel
+                <span className="hidden sm:inline">Excel</span>
+                <span className="sm:hidden">XLS</span>
               </Button>
-              <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2">
+              <Button 
+                onClick={handleExportPDF} 
+                variant="outline" 
+                className="flex items-center gap-2 flex-1 sm:flex-none"
+                size={isMobile ? "sm" : "default"}
+              >
                 <Download className="h-4 w-4" />
-                PDF
+                <span className="hidden sm:inline">PDF</span>
+                <span className="sm:hidden">PDF</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Anggaran</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 sm:p-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Anggaran</CardTitle>
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+            <CardContent className="p-0 sm:p-2">
+              <div className="text-sm sm:text-2xl font-bold text-blue-600">
                 Rp {totalAnggaran.toLocaleString('id-ID')}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Realisasi</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 sm:p-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Total Realisasi</CardTitle>
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+            <CardContent className="p-0 sm:p-2">
+              <div className="text-sm sm:text-2xl font-bold text-green-600">
                 Rp {totalRealisasi.toLocaleString('id-ID')}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Selisih</CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 sm:p-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Selisih</CardTitle>
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${totalSelisih >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <CardContent className="p-0 sm:p-2">
+              <div className={`text-sm sm:text-2xl font-bold ${totalSelisih >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 Rp {totalSelisih.toLocaleString('id-ID')}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Persentase Realisasi</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+          <Card className="p-3 sm:p-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0 sm:p-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Persentase Realisasi</CardTitle>
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="p-0 sm:p-2">
+              <div className="text-sm sm:text-2xl font-bold">
                 {totalPersentase.toFixed(2)}%
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabel LRA */}
+        {/* Data Display */}
         <Card>
-          <CardHeader>
-            <CardTitle>Detail Realisasi Anggaran</CardTitle>
-            <CardDescription>
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-base sm:text-lg md:text-xl">Detail Realisasi Anggaran</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {dateRange?.from && dateRange?.to && (
                 <>Periode: {format(dateRange.from, 'dd MMMM yyyy', { locale: id })} - {format(dateRange.to, 'dd MMMM yyyy', { locale: id })}</>
               )}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500">Memuat data...</p>
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-sm sm:text-base">Memuat data...</p>
                 </div>
               </div>
+            ) : lraData.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500 text-sm">Tidak ada data untuk periode yang dipilih</p>
+              </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Kode Rekening</TableHead>
-                      <TableHead>Nama Rekening</TableHead>
-                      <TableHead className="text-right">Anggaran</TableHead>
-                      <TableHead className="text-right">Realisasi</TableHead>
-                      <TableHead className="text-right">Selisih</TableHead>
-                      <TableHead className="text-right">Persentase</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lraData.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          Tidak ada data untuk periode yang dipilih
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      lraData.map((item, index) => (
-                        <TableRow key={`lra-${item.kode_rek}-${index}`}>
-                          <TableCell className="font-mono text-sm">
-                            {item.kode_rek}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {item.nama_rek}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            Rp {item.anggaran.toLocaleString('id-ID')}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            Rp {item.realisasi.toLocaleString('id-ID')}
-                          </TableCell>
-                          <TableCell className={`text-right font-medium ${item.selisih >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            Rp {item.selisih.toLocaleString('id-ID')}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {item.persentase.toFixed(2)}%
-                          </TableCell>
-                          <TableCell>
+              <>
+                {/* Mobile View - Cards */}
+                {isMobile && (
+                  <div className="space-y-3">
+                    {lraData.map((item, index) => (
+                      <Card key={`lra-mobile-${item.kode_rek}-${index}`} className="p-3">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-mono text-xs font-medium text-gray-600">
+                                {item.kode_rek}
+                              </p>
+                              <p className="text-sm font-medium truncate" title={item.nama_rek}>
+                                {item.nama_rek}
+                              </p>
+                            </div>
                             <Badge 
                               variant={
                                 item.persentase >= 100 ? 'destructive' : 
                                 item.persentase >= 80 ? 'default' : 
                                 'secondary'
                               }
+                              className="text-xs"
                             >
                               {item.persentase >= 100 ? 'Over Budget' : 
                                item.persentase >= 80 ? 'Hampir Tercapai' : 
                                'Normal'}
                             </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <p className="text-gray-500">Anggaran</p>
+                              <p className="font-medium">Rp {item.anggaran.toLocaleString('id-ID')}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Realisasi</p>
+                              <p className="font-medium">Rp {item.realisasi.toLocaleString('id-ID')}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Selisih</p>
+                              <p className={`font-medium ${item.selisih >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Rp {item.selisih.toLocaleString('id-ID')}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-500">Persentase</p>
+                              <p className="font-medium">{item.persentase.toFixed(2)}%</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Desktop View - Table */}
+                {!isMobile && (
+                  <div className="rounded-md border">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[120px]">Kode Rekening</TableHead>
+                            <TableHead className="min-w-[200px]">Nama Rekening</TableHead>
+                            <TableHead className="text-right min-w-[120px]">Anggaran</TableHead>
+                            <TableHead className="text-right min-w-[120px]">Realisasi</TableHead>
+                            <TableHead className="text-right min-w-[120px]">Selisih</TableHead>
+                            <TableHead className="text-right min-w-[100px]">Persentase</TableHead>
+                            <TableHead className="min-w-[120px]">Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {lraData.map((item, index) => (
+                            <TableRow key={`lra-${item.kode_rek}-${index}`}>
+                              <TableCell className="font-mono text-sm">
+                                {item.kode_rek}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {item.nama_rek}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                Rp {item.anggaran.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                Rp {item.realisasi.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className={`text-right font-medium ${item.selisih >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                Rp {item.selisih.toLocaleString('id-ID')}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {item.persentase.toFixed(2)}%
+                              </TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={
+                                    item.persentase >= 100 ? 'destructive' : 
+                                    item.persentase >= 80 ? 'default' : 
+                                    'secondary'
+                                  }
+                                >
+                                  {item.persentase >= 100 ? 'Over Budget' : 
+                                   item.persentase >= 80 ? 'Hampir Tercapai' : 
+                                   'Normal'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

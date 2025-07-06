@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -417,60 +416,39 @@ export default function UserManagement() {
                 </Button>
               </div>
             ) : (
-              <div className="w-full">
-                <div className="rounded-md border">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="min-w-[180px] sm:min-w-[200px]">
-                            <div className="text-xs sm:text-sm font-semibold">Email</div>
-                          </TableHead>
-                          <TableHead className="min-w-[120px] hidden sm:table-cell">
-                            <div className="text-xs sm:text-sm font-semibold">Nama Lengkap</div>
-                          </TableHead>
-                          <TableHead className="min-w-[100px]">
-                            <div className="text-xs sm:text-sm font-semibold">Role</div>
-                          </TableHead>
-                          <TableHead className="min-w-[120px] hidden lg:table-cell">
-                            <div className="text-xs sm:text-sm font-semibold">Tanggal Daftar</div>
-                          </TableHead>
-                          <TableHead className="min-w-[120px]">
-                            <div className="text-xs sm:text-sm font-semibold">Aksi</div>
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((user) => (
-                          <TableRow key={user.id} className="hover:bg-muted/50">
-                            <TableCell className="p-2 sm:p-4">
-                              <div className="min-w-0">
-                                <div className="font-medium text-xs sm:text-sm truncate" title={user.email}>
-                                  {user.email}
-                                </div>
-                                <div className="text-xs text-gray-500 sm:hidden mt-1">
-                                  {user.full_name || '-'}
-                                </div>
-                                <div className="text-xs text-gray-400 lg:hidden mt-1">
-                                  {new Date(user.created_at).toLocaleDateString('id-ID', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: '2-digit'
-                                  })}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden sm:table-cell p-2 sm:p-4">
-                              <div className="text-xs sm:text-sm">
+              <>
+                {/* Mobile View - Cards */}
+                {isMobile && (
+                  <div className="space-y-3">
+                    {users.map((user) => (
+                      <Card key={`user-mobile-${user.id}`} className="p-3">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate" title={user.email}>
+                                {user.email}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
                                 {user.full_name || '-'}
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-2 sm:p-4">
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {new Date(user.created_at).toLocaleDateString('id-ID', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1">Role</p>
                               <Select
                                 value={user.role}
                                 onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
                               >
-                                <SelectTrigger className="w-full min-w-[80px] h-8 text-xs sm:text-sm">
+                                <SelectTrigger className="w-full h-8 text-xs">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -479,50 +457,152 @@ export default function UserManagement() {
                                   <SelectItem value="superadmin">Superadmin</SelectItem>
                                 </SelectContent>
                               </Select>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell p-2 sm:p-4">
-                              <div className="text-xs sm:text-sm">
-                                {new Date(user.created_at).toLocaleDateString('id-ID')}
-                              </div>
-                            </TableCell>
-                            <TableCell className="p-2 sm:p-4">
-                              <div className="flex gap-1 sm:gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openPermissionDialog(user)}
-                                  className="h-8 px-2 text-xs"
-                                >
-                                  <Settings className="h-3 w-3" />
-                                  <span className="hidden sm:inline ml-1">Permission</span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openEditDialog(user)}
-                                  className="h-8 px-2 text-xs"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                  <span className="hidden sm:inline ml-1">Edit</span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDeleteDialog(user)}
-                                  className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                  <span className="hidden sm:inline ml-1">Hapus</span>
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                            </div>
+                            
+                            <div className="flex gap-2 pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openPermissionDialog(user)}
+                                className="flex-1 h-8 text-xs"
+                              >
+                                <Settings className="h-3 w-3 mr-1" />
+                                Permission
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditDialog(user)}
+                                className="h-8 px-2 text-xs"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDeleteDialog(user)}
+                                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                </div>
-              </div>
+                )}
+
+                {/* Desktop View - Table */}
+                {!isMobile && (
+                  <div className="w-full">
+                    <div className="rounded-md border">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="min-w-[180px] sm:min-w-[200px]">
+                                <div className="text-xs sm:text-sm font-semibold">Email</div>
+                              </TableHead>
+                              <TableHead className="min-w-[120px] hidden sm:table-cell">
+                                <div className="text-xs sm:text-sm font-semibold">Nama Lengkap</div>
+                              </TableHead>
+                              <TableHead className="min-w-[100px]">
+                                <div className="text-xs sm:text-sm font-semibold">Role</div>
+                              </TableHead>
+                              <TableHead className="min-w-[120px] hidden lg:table-cell">
+                                <div className="text-xs sm:text-sm font-semibold">Tanggal Daftar</div>
+                              </TableHead>
+                              <TableHead className="min-w-[120px]">
+                                <div className="text-xs sm:text-sm font-semibold">Aksi</div>
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {users.map((user) => (
+                              <TableRow key={user.id} className="hover:bg-muted/50">
+                                <TableCell className="p-2 sm:p-4">
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-xs sm:text-sm truncate" title={user.email}>
+                                      {user.email}
+                                    </div>
+                                    <div className="text-xs text-gray-500 sm:hidden mt-1">
+                                      {user.full_name || '-'}
+                                    </div>
+                                    <div className="text-xs text-gray-400 lg:hidden mt-1">
+                                      {new Date(user.created_at).toLocaleDateString('id-ID', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: '2-digit'
+                                      })}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell p-2 sm:p-4">
+                                  <div className="text-xs sm:text-sm">
+                                    {user.full_name || '-'}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-2 sm:p-4">
+                                  <Select
+                                    value={user.role}
+                                    onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
+                                  >
+                                    <SelectTrigger className="w-full min-w-[80px] h-8 text-xs sm:text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pengguna">Pengguna</SelectItem>
+                                      <SelectItem value="admin">Admin</SelectItem>
+                                      <SelectItem value="superadmin">Superadmin</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="hidden lg:table-cell p-2 sm:p-4">
+                                  <div className="text-xs sm:text-sm">
+                                    {new Date(user.created_at).toLocaleDateString('id-ID')}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="p-2 sm:p-4">
+                                  <div className="flex gap-1 sm:gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openPermissionDialog(user)}
+                                      className="h-8 px-2 text-xs"
+                                    >
+                                      <Settings className="h-3 w-3" />
+                                      <span className="hidden sm:inline ml-1">Permission</span>
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openEditDialog(user)}
+                                      className="h-8 px-2 text-xs"
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                      <span className="hidden sm:inline ml-1">Edit</span>
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openDeleteDialog(user)}
+                                      className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      <span className="hidden sm:inline ml-1">Hapus</span>
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
