@@ -35,11 +35,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { User, Settings, Shield } from 'lucide-react';
 
+type UserRole = 'superadmin' | 'admin' | 'pengguna';
+
 interface UserData {
   id: string;
   email: string;
   full_name: string | null;
-  role: string;
+  role: UserRole;
   created_at: string;
 }
 
@@ -103,7 +105,7 @@ export default function UserManagement() {
       id: user.id,
       email: user.email,
       full_name: user.full_name,
-      role: user.user_roles.role,
+      role: user.user_roles.role as UserRole,
       created_at: user.created_at,
     }));
 
@@ -140,11 +142,16 @@ export default function UserManagement() {
   };
 
   useEffect(() => {
-    fetchUsers();
-    fetchPages();
+    const loadData = async () => {
+      await fetchUsers();
+      await fetchPages();
+      setLoading(false);
+    };
+    
+    loadData();
   }, []);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
     const { error } = await supabase
       .from('user_roles')
       .update({ role: newRole })
@@ -256,7 +263,7 @@ export default function UserManagement() {
                     <TableCell>
                       <Select
                         value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.id, value)}
+                        onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
