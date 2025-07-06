@@ -18,6 +18,7 @@ import BukuKasUmum from "./pages/BukuKasUmum";
 import LaporanRealisasiAnggaran from "./pages/LaporanRealisasiAnggaran";
 import Anggaran from "./pages/Anggaran";
 import Auth from "./pages/Auth";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/laporan-realisasi-anggaran" element={
               <ProtectedRoute requiredPath="/laporan-realisasi-anggaran">
                 <LaporanRealisasiAnggaran />
+              </ProtectedRoute>
+            } />
+            <Route path="/user-management" element={
+              <ProtectedRoute>
+                <UserManagement />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
