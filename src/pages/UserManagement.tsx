@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,10 +74,10 @@ export default function UserManagement() {
     return (
       <Layout title="Akses Ditolak">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
+          <div className="text-center p-4">
             <Shield className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-2xl font-bold mb-2">Akses Ditolak</h2>
-            <p className="text-gray-600">Hanya superadmin yang dapat mengakses halaman ini.</p>
+            <h2 className="text-xl md:text-2xl font-bold mb-2">Akses Ditolak</h2>
+            <p className="text-gray-600 text-sm md:text-base">Hanya superadmin yang dapat mengakses halaman ini.</p>
           </div>
         </div>
       </Layout>
@@ -288,160 +287,184 @@ export default function UserManagement() {
 
   return (
     <Layout title="Manajemen Pengguna">
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+              <User className="h-4 w-4 md:h-5 md:w-5" />
               Daftar Pengguna
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm">
               Kelola pengguna dan permission akses halaman
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0">
             {users.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">Tidak ada data pengguna yang ditemukan</p>
+                <p className="text-gray-500 text-sm md:text-base">Tidak ada data pengguna yang ditemukan</p>
                 <Button 
                   onClick={fetchUsers} 
                   variant="outline" 
                   className="mt-4"
+                  size="sm"
                 >
                   Muat Ulang
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Nama Lengkap</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Tanggal Daftar</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>{user.full_name || '-'}</TableCell>
-                      <TableCell>
-                        <Select
-                          value={user.role}
-                          onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pengguna">Pengguna</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="superadmin">Superadmin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(user.created_at).toLocaleDateString('id-ID')}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openPermissionDialog(user)}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Permission
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px]">Email</TableHead>
+                      <TableHead className="min-w-[150px] hidden md:table-cell">Nama Lengkap</TableHead>
+                      <TableHead className="min-w-[120px]">Role</TableHead>
+                      <TableHead className="min-w-[120px] hidden lg:table-cell">Tanggal Daftar</TableHead>
+                      <TableHead className="min-w-[100px]">Aksi</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          <div>
+                            <div className="truncate max-w-[180px]" title={user.email}>
+                              {user.email}
+                            </div>
+                            <div className="text-xs text-gray-500 md:hidden">
+                              {user.full_name || '-'}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {user.full_name || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={user.role}
+                            onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
+                          >
+                            <SelectTrigger className="w-full min-w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pengguna">Pengguna</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="superadmin">Superadmin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {new Date(user.created_at).toLocaleDateString('id-ID')}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openPermissionDialog(user)}
+                            className="w-full md:w-auto"
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            <span className="hidden sm:inline">Permission</span>
+                            <span className="sm:hidden">Izin</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Permission Dialog */}
         <Dialog open={permissionDialogOpen} onOpenChange={setPermissionDialogOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Kelola Permission - {selectedUser?.email}</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-lg md:text-xl">
+                Kelola Permission - {selectedUser?.email}
+              </DialogTitle>
+              <DialogDescription className="text-sm">
                 Atur permission akses untuk setiap halaman
               </DialogDescription>
             </DialogHeader>
             
-            <div className="max-h-96 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Halaman</TableHead>
-                    <TableHead>View</TableHead>
-                    <TableHead>Create</TableHead>
-                    <TableHead>Edit</TableHead>
-                    <TableHead>Delete</TableHead>
-                    <TableHead>Export</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pages.map((page) => (
-                    <TableRow key={page.page_path}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{page.page_name}</div>
-                          <div className="text-sm text-gray-500">{page.page_path}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={getPermissionValue(page.page_path, 'can_view') as boolean}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(page.page_path, 'can_view', checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={getPermissionValue(page.page_path, 'can_create') as boolean}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(page.page_path, 'can_create', checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={getPermissionValue(page.page_path, 'can_edit') as boolean}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(page.page_path, 'can_edit', checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={getPermissionValue(page.page_path, 'can_delete') as boolean}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(page.page_path, 'can_delete', checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={getPermissionValue(page.page_path, 'can_export') as boolean}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(page.page_path, 'can_export', checked as boolean)
-                          }
-                        />
-                      </TableCell>
+            <div className="flex-1 overflow-auto">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[200px] sticky left-0 bg-background z-10">
+                        Halaman
+                      </TableHead>
+                      <TableHead className="min-w-[80px] text-center">View</TableHead>
+                      <TableHead className="min-w-[80px] text-center">Create</TableHead>
+                      <TableHead className="min-w-[80px] text-center">Edit</TableHead>
+                      <TableHead className="min-w-[80px] text-center">Delete</TableHead>
+                      <TableHead className="min-w-[80px] text-center">Export</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {pages.map((page) => (
+                      <TableRow key={page.page_path}>
+                        <TableCell className="sticky left-0 bg-background z-10">
+                          <div>
+                            <div className="font-medium text-sm">{page.page_name}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-[180px]" title={page.page_path}>
+                              {page.page_path}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={getPermissionValue(page.page_path, 'can_view') as boolean}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(page.page_path, 'can_view', checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={getPermissionValue(page.page_path, 'can_create') as boolean}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(page.page_path, 'can_create', checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={getPermissionValue(page.page_path, 'can_edit') as boolean}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(page.page_path, 'can_edit', checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={getPermissionValue(page.page_path, 'can_delete') as boolean}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(page.page_path, 'can_delete', checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Checkbox
+                            checked={getPermissionValue(page.page_path, 'can_export') as boolean}
+                            onCheckedChange={(checked) =>
+                              handlePermissionChange(page.page_path, 'can_export', checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
-            <DialogFooter>
-              <Button onClick={() => setPermissionDialogOpen(false)}>
+            <DialogFooter className="pt-4">
+              <Button onClick={() => setPermissionDialogOpen(false)} className="w-full md:w-auto">
                 Tutup
               </Button>
             </DialogFooter>
