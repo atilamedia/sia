@@ -19,6 +19,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const menuItems = [
   {
@@ -93,25 +94,60 @@ const adminMenuItems = [
 ];
 
 interface SidebarProps {
+  collapsed?: boolean;
+  mobileOpen?: boolean;
   onToggle?: (collapsed: boolean) => void;
+  onMobileToggle?: (open: boolean) => void;
 }
 
-export function Sidebar({ onToggle }: SidebarProps) {
+export function Sidebar({ collapsed = false, mobileOpen = false, onToggle, onMobileToggle }: SidebarProps) {
   const location = useLocation();
   const { hasPagePermission, userRole } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [internalCollapsed, setInternalCollapsed] = useState(collapsed);
+
+  // Sync internal state with props
+  useEffect(() => {
+    setInternalCollapsed(collapsed);
+  }, [collapsed]);
+
+  // Listen for mobile menu toggle events
+  useEffect(() => {
+    const handleMobileMenuToggle = (event: CustomEvent) => {
+      if (onMobileToggle) {
+        onMobileToggle(event.detail.open);
+      }
+    };
+
+    window.addEventListener('mobile-menu-toggle', handleMobileMenuToggle as EventListener);
+    
+    return () => {
+      window.removeEventListener('mobile-menu-toggle', handleMobileMenuToggle as EventListener);
+    };
+  }, [onMobileToggle]);
 
   const handleToggle = () => {
-    const newCollapsed = !collapsed;
-    setCollapsed(newCollapsed);
-    
-    // Dispatch custom event for layout to listen to
-    window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
-      detail: { collapsed: newCollapsed } 
-    }));
-    
-    if (onToggle) {
-      onToggle(newCollapsed);
+    if (isMobile) {
+      // On mobile, toggle the mobile menu
+      const newOpen = !mobileOpen;
+      if (onMobileToggle) {
+        onMobileToggle(newOpen);
+      }
+      window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
+        detail: { open: newOpen } 
+      }));
+    } else {
+      // On desktop/tablet, toggle collapse state
+      const newCollapsed = !internalCollapsed;
+      setInternalCollapsed(newCollapsed);
+      
+      window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
+        detail: { collapsed: newCollapsed } 
+      }));
+      
+      if (onToggle) {
+        onToggle(newCollapsed);
+      }
     }
   };
 
@@ -125,15 +161,24 @@ export function Sidebar({ onToggle }: SidebarProps) {
     ? [...visibleMenuItems, ...adminMenuItems]
     : visibleMenuItems;
 
+  const sidebarWidth = isMobile 
+    ? "w-[250px]" 
+    : internalCollapsed 
+      ? "w-[70px]" 
+      : "w-[250px]";
+
+  const sidebarClasses = cn(
+    "fixed left-0 top-0 z-50 h-full bg-card border-r transition-all duration-300 ease-linear",
+    sidebarWidth,
+    isMobile && !mobileOpen && "-translate-x-full"
+  );
+
   return (
-    <div className={cn(
-      "fixed left-0 top-0 z-50 h-full bg-card border-r transition-all duration-300 ease-linear",
-      collapsed ? "w-[70px]" : "w-[250px]"
-    )}>
+    <div className={sidebarClasses}>
       <div className="flex h-full flex-col">
         {/* Header */}
         <div className="flex h-14 items-center justify-between px-4 border-b">
-          {!collapsed && (
+          {(!internalCollapsed || isMobile) && (
             <div className="flex items-center space-x-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <LayoutDashboard className="h-4 w-4" />
@@ -147,7 +192,7 @@ export function Sidebar({ onToggle }: SidebarProps) {
             onClick={handleToggle}
             className="h-8 w-8 p-0"
           >
-            {collapsed ? (
+            {internalCollapsed && !isMobile ? (
               <ChevronRight className="h-4 w-4" />
             ) : (
               <ChevronLeft className="h-4 w-4" />
@@ -168,11 +213,11 @@ export function Sidebar({ onToggle }: SidebarProps) {
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
                       "w-full justify-start",
-                      collapsed && "px-2"
+                      internalCollapsed && !isMobile && "px-2"
                     )}
                   >
-                    <Icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
-                    {!collapsed && <span>{item.title}</span>}
+                    <Icon className={cn("h-4 w-4", (!internalCollapsed || isMobile) && "mr-2")} />
+                    {(!internalCollapsed || isMobile) && <span>{item.title}</span>}
                   </Button>
                 </Link>
               );

@@ -15,10 +15,35 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Auto-collapse sidebar on tablet view (768px - 1024px)
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width >= 768 && width < 1024) {
+        // Tablet view - auto collapse
+        setSidebarCollapsed(true);
+      } else if (width >= 1024) {
+        // Desktop view - expand by default
+        setSidebarCollapsed(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
   // Listen for sidebar state changes
   useEffect(() => {
     const handleSidebarToggle = (event: CustomEvent) => {
-      setSidebarCollapsed(event.detail.collapsed);
+      if (isMobile) {
+        setSidebarOpen(event.detail.open);
+      } else {
+        setSidebarCollapsed(event.detail.collapsed);
+      }
     };
 
     window.addEventListener('sidebar-toggle', handleSidebarToggle as EventListener);
@@ -26,10 +51,17 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
     return () => {
       window.removeEventListener('sidebar-toggle', handleSidebarToggle as EventListener);
     };
-  }, []);
+  }, [isMobile]);
 
   const handleMobileMenuToggle = () => {
-    setSidebarOpen(!sidebarOpen);
+    if (isMobile) {
+      const newOpen = !sidebarOpen;
+      setSidebarOpen(newOpen);
+      // Dispatch event for sidebar to listen to
+      window.dispatchEvent(new CustomEvent('mobile-menu-toggle', { 
+        detail: { open: newOpen } 
+      }));
+    }
   };
 
   return (
@@ -38,16 +70,16 @@ export function Layout({ children, title = "Dashboard" }: LayoutProps) {
       {isMobile && sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 bg-black/50" 
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => handleMobileMenuToggle()}
         />
       )}
       
-      <div className={cn(
-        "transition-transform duration-300 ease-linear",
-        isMobile && !sidebarOpen && "-translate-x-full"
-      )}>
-        <Sidebar onToggle={setSidebarCollapsed} />
-      </div>
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        mobileOpen={sidebarOpen}
+        onToggle={setSidebarCollapsed}
+        onMobileToggle={setSidebarOpen}
+      />
       
       <div className={cn(
         "flex-1 flex flex-col transition-all duration-300 ease-linear",
