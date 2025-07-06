@@ -44,6 +44,8 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
     setLoading(true);
 
     try {
+      console.log('Creating new user:', formData);
+
       // Create user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -55,15 +57,23 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
         },
       });
 
+      console.log('Auth signup result:', { authData, authError });
+
       if (authError) {
         console.error('Auth error:', authError);
-        toast.error(authError.message);
+        toast.error(`Gagal membuat pengguna: ${authError.message}`);
         return;
       }
 
       if (authData.user) {
+        console.log('User created successfully, setting up profile and role...');
+
+        // Wait a bit for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // Update role if not default
         if (formData.role !== 'pengguna') {
+          console.log('Updating user role to:', formData.role);
           const { error: roleError } = await supabase
             .from('user_roles')
             .update({ role: formData.role })
@@ -72,18 +82,27 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
           if (roleError) {
             console.error('Role error:', roleError);
             toast.error('Pengguna dibuat tapi gagal mengatur role');
+          } else {
+            console.log('Role updated successfully');
           }
         }
 
         toast.success('Pengguna berhasil ditambahkan');
+        
+        // Reset form
         setFormData({
           email: '',
           password: '',
           fullName: '',
           role: 'pengguna',
         });
+        
+        // Close dialog and refresh data
         setOpen(false);
         onUserAdded();
+      } else {
+        console.error('No user returned from signup');
+        toast.error('Gagal membuat pengguna: Tidak ada data pengguna yang dikembalikan');
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -93,8 +112,24 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      password: '',
+      fullName: '',
+      role: 'pengguna',
+    });
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      resetForm();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="mb-4">
           <UserPlus className="h-4 w-4 mr-2" />
@@ -118,6 +153,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
                 disabled={loading}
+                placeholder="Masukkan nama lengkap"
               />
             </div>
             <div className="space-y-2">
@@ -129,6 +165,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 disabled={loading}
+                placeholder="Masukkan alamat email"
               />
             </div>
             <div className="space-y-2">
@@ -141,6 +178,7 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
                 minLength={6}
                 required
                 disabled={loading}
+                placeholder="Minimal 6 karakter"
               />
             </div>
             <div className="space-y-2">
@@ -162,9 +200,17 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
             </div>
           </div>
           <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => handleOpenChange(false)}
+              disabled={loading}
+            >
+              Batal
+            </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Tambah Pengguna
+              {loading ? 'Menyimpan...' : 'Tambah Pengguna'}
             </Button>
           </DialogFooter>
         </form>

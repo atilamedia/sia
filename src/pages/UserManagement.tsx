@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -87,96 +88,11 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserData | null>(null);
 
-  // Redirect if not superadmin
-  if (userRole !== 'superadmin') {
-    return (
-      <Layout title="Akses Ditolak">
-        <div className="flex items-center justify-center min-h-[50vh] px-4">
-          <div className="text-center p-4 max-w-sm">
-            <Shield className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">Akses Ditolak</h2>
-            <p className="text-gray-600 text-sm sm:text-base">Hanya superadmin yang dapat mengakses halaman ini.</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   const fetchUsers = async () => {
     try {
       console.log('Fetching all users data...');
       
-      // Get auth users (this includes more detailed information)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) {
-        console.error('Error fetching auth users:', authError);
-        // Fallback to profiles if auth admin access fails
-        return fetchUsersFromProfiles();
-      }
-
-      console.log('Auth users data:', authUsers);
-
-      if (!authUsers || authUsers.users.length === 0) {
-        console.log('No auth users found, trying profiles...');
-        return fetchUsersFromProfiles();
-      }
-
-      // Get user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
-
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
-        toast.error('Gagal memuat data role pengguna');
-        return;
-      }
-
-      console.log('Roles data:', rolesData);
-
-      // Get profiles for additional info
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-
-      // Combine the data
-      const formattedUsers = authUsers.users.map((authUser: any) => {
-        const userRole = rolesData?.find((role: any) => role.user_id === authUser.id);
-        const profile = profilesData?.find((profile: any) => profile.id === authUser.id);
-        
-        return {
-          id: authUser.id,
-          email: authUser.email || profile?.email || '',
-          full_name: profile?.full_name || authUser.user_metadata?.full_name || null,
-          role: (userRole?.role || 'pengguna') as UserRole,
-          created_at: authUser.created_at,
-          last_sign_in_at: authUser.last_sign_in_at,
-          email_confirmed_at: authUser.email_confirmed_at,
-          phone: authUser.phone || null,
-          is_active: !authUser.banned_until,
-        };
-      });
-
-      console.log('Formatted users:', formattedUsers);
-      setUsers(formattedUsers);
-
-    } catch (error) {
-      console.error('Unexpected error fetching users:', error);
-      toast.error('Terjadi kesalahan saat memuat data pengguna');
-      // Fallback to profiles
-      return fetchUsersFromProfiles();
-    }
-  };
-
-  const fetchUsersFromProfiles = async () => {
-    try {
-      console.log('Fetching users from profiles...');
-      
+      // First, try to get users from profiles table
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
@@ -195,6 +111,7 @@ export default function UserManagement() {
         return;
       }
 
+      // Get user roles
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('*');
@@ -205,6 +122,9 @@ export default function UserManagement() {
         return;
       }
 
+      console.log('Roles data:', rolesData);
+
+      // Combine the data
       const formattedUsers = profilesData.map((profile: any) => {
         const userRole = rolesData?.find((role: any) => role.user_id === profile.id);
         return {
@@ -213,18 +133,18 @@ export default function UserManagement() {
           full_name: profile.full_name,
           role: (userRole?.role || 'pengguna') as UserRole,
           created_at: profile.created_at,
-          last_sign_in_at: null,
-          email_confirmed_at: null,
-          phone: null,
-          is_active: true,
+          last_sign_in_at: null, // Not available from profiles
+          email_confirmed_at: null, // Not available from profiles
+          phone: null, // Not available from profiles
+          is_active: true, // Assume active from profiles
         };
       });
 
-      console.log('Formatted users from profiles:', formattedUsers);
+      console.log('Formatted users:', formattedUsers);
       setUsers(formattedUsers);
 
     } catch (error) {
-      console.error('Unexpected error fetching users from profiles:', error);
+      console.error('Unexpected error fetching users:', error);
       toast.error('Terjadi kesalahan saat memuat data pengguna');
     }
   };
@@ -368,6 +288,58 @@ export default function UserManagement() {
     return permission ? permission[permissionType as keyof UserPermission] : false;
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getRoleBadgeColor = (role: UserRole) => {
+    switch (role) {
+      case 'superadmin':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'admin':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pengguna':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  // Check authorization after all hooks are called
+  if (userRole !== 'superadmin') {
+    return (
+      <Layout title="Akses Ditolak">
+        <div className="flex items-center justify-center min-h-[50vh] px-4">
+          <div className="text-center p-4 max-w-sm">
+            <Shield className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2">Akses Ditolak</h2>
+            <p className="text-gray-600 text-sm sm:text-base">Hanya superadmin yang dapat mengakses halaman ini.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Layout title="Manajemen Pengguna">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-sm sm:text-base">Memuat data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   const PermissionTable = () => (
     <div className="w-full">
       <div className="rounded-md border">
@@ -447,43 +419,6 @@ export default function UserManagement() {
     </div>
   );
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case 'superadmin':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pengguna':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout title="Manajemen Pengguna">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-sm sm:text-base">Memuat data...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout title="Manajemen Pengguna">
       <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
@@ -545,15 +480,6 @@ export default function UserManagement() {
                                 </p>
                               </div>
                               
-                              {user.last_sign_in_at && (
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Key className="h-3 w-3 text-gray-400" />
-                                  <p className="text-xs text-gray-500">
-                                    Login: {formatDate(user.last_sign_in_at)}
-                                  </p>
-                                </div>
-                              )}
-                              
                               <div className="flex items-center gap-2">
                                 <Badge 
                                   variant="outline" 
@@ -561,15 +487,9 @@ export default function UserManagement() {
                                 >
                                   {user.role}
                                 </Badge>
-                                {user.is_active ? (
-                                  <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200">
-                                    Aktif
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs bg-red-100 text-red-800 border-red-200">
-                                    Tidak Aktif
-                                  </Badge>
-                                )}
+                                <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200">
+                                  Aktif
+                                </Badge>
                               </div>
                             </div>
                           </div>
@@ -646,9 +566,6 @@ export default function UserManagement() {
                               <TableHead className="min-w-[120px] hidden xl:table-cell">
                                 <div className="text-xs sm:text-sm font-semibold">Tgl Daftar</div>
                               </TableHead>
-                              <TableHead className="min-w-[120px] hidden xl:table-cell">
-                                <div className="text-xs sm:text-sm font-semibold">Login Terakhir</div>
-                              </TableHead>
                               <TableHead className="min-w-[150px]">
                                 <div className="text-xs sm:text-sm font-semibold">Aksi</div>
                               </TableHead>
@@ -667,17 +584,6 @@ export default function UserManagement() {
                                         {user.full_name}
                                       </div>
                                     )}
-                                    <div className="lg:hidden mt-1">
-                                      <Badge 
-                                        variant="outline" 
-                                        className={`text-xs ${user.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}`}
-                                      >
-                                        {user.is_active ? 'Aktif' : 'Tidak Aktif'}
-                                      </Badge>
-                                    </div>
-                                    <div className="xl:hidden mt-1 text-xs text-gray-400">
-                                      Daftar: {formatDate(user.created_at)}
-                                    </div>
                                   </div>
                                 </TableCell>
                                 <TableCell className="p-2 sm:p-4">
@@ -696,21 +602,13 @@ export default function UserManagement() {
                                   </Select>
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell p-2 sm:p-4">
-                                  <Badge 
-                                    variant="outline" 
-                                    className={`text-xs ${user.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'}`}
-                                  >
-                                    {user.is_active ? 'Aktif' : 'Tidak Aktif'}
+                                  <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200">
+                                    Aktif
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="hidden xl:table-cell p-2 sm:p-4">
                                   <div className="text-xs sm:text-sm">
                                     {formatDate(user.created_at)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="hidden xl:table-cell p-2 sm:p-4">
-                                  <div className="text-xs sm:text-sm">
-                                    {formatDate(user.last_sign_in_at)}
                                   </div>
                                 </TableCell>
                                 <TableCell className="p-2 sm:p-4">
