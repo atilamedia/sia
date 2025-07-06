@@ -86,59 +86,101 @@ export default function UserManagement() {
   }
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name,
-        created_at,
-        user_roles!inner(role)
-      `);
+    try {
+      console.log('Fetching users...');
+      
+      // First get all profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
 
-    if (error) {
-      toast.error('Gagal memuat data pengguna');
-      return;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        toast.error('Gagal memuat data profil pengguna');
+        return;
+      }
+
+      console.log('Profiles data:', profilesData);
+
+      if (!profilesData || profilesData.length === 0) {
+        console.log('No profiles found');
+        setUsers([]);
+        return;
+      }
+
+      // Then get user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+        toast.error('Gagal memuat data role pengguna');
+        return;
+      }
+
+      console.log('Roles data:', rolesData);
+
+      // Combine the data
+      const formattedUsers = profilesData.map((profile: any) => {
+        const userRole = rolesData?.find((role: any) => role.user_id === profile.id);
+        return {
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          role: (userRole?.role || 'pengguna') as UserRole,
+          created_at: profile.created_at,
+        };
+      });
+
+      console.log('Formatted users:', formattedUsers);
+      setUsers(formattedUsers);
+
+    } catch (error) {
+      console.error('Unexpected error fetching users:', error);
+      toast.error('Terjadi kesalahan saat memuat data pengguna');
     }
-
-    const formattedUsers = data.map((user: any) => ({
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.user_roles.role as UserRole,
-      created_at: user.created_at,
-    }));
-
-    setUsers(formattedUsers);
   };
 
   const fetchPages = async () => {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('page_path, page_name, description')
-      .eq('is_active', true)
-      .order('page_path');
+    try {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('page_path, page_name, description')
+        .eq('is_active', true)
+        .order('page_path');
 
-    if (error) {
-      toast.error('Gagal memuat data halaman');
-      return;
+      if (error) {
+        console.error('Error fetching pages:', error);
+        toast.error('Gagal memuat data halaman');
+        return;
+      }
+
+      setPages(data || []);
+    } catch (error) {
+      console.error('Unexpected error fetching pages:', error);
+      toast.error('Terjadi kesalahan saat memuat data halaman');
     }
-
-    setPages(data);
   };
 
   const fetchUserPermissions = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('user_page_permissions')
-      .select('page_path, can_view, can_create, can_edit, can_delete, can_export')
-      .eq('user_id', userId);
+    try {
+      const { data, error } = await supabase
+        .from('user_page_permissions')
+        .select('page_path, can_view, can_create, can_edit, can_delete, can_export')
+        .eq('user_id', userId);
 
-    if (error) {
-      toast.error('Gagal memuat permission pengguna');
-      return;
+      if (error) {
+        console.error('Error fetching user permissions:', error);
+        toast.error('Gagal memuat permission pengguna');
+        return;
+      }
+
+      setUserPermissions(data || []);
+    } catch (error) {
+      console.error('Unexpected error fetching permissions:', error);
+      toast.error('Terjadi kesalahan saat memuat permission pengguna');
     }
-
-    setUserPermissions(data);
   };
 
   useEffect(() => {
@@ -152,59 +194,72 @@ export default function UserManagement() {
   }, []);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    const { error } = await supabase
-      .from('user_roles')
-      .update({ role: newRole })
-      .eq('user_id', userId);
+    try {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
 
-    if (error) {
-      toast.error('Gagal mengubah role pengguna');
-      return;
+      if (error) {
+        console.error('Error updating role:', error);
+        toast.error('Gagal mengubah role pengguna');
+        return;
+      }
+
+      toast.success('Role pengguna berhasil diubah');
+      fetchUsers();
+    } catch (error) {
+      console.error('Unexpected error updating role:', error);
+      toast.error('Terjadi kesalahan saat mengubah role');
     }
-
-    toast.success('Role pengguna berhasil diubah');
-    fetchUsers();
   };
 
   const handlePermissionChange = async (pagePath: string, permissionType: string, value: boolean) => {
     if (!selectedUser) return;
 
-    const existingPermission = userPermissions.find(p => p.page_path === pagePath);
-    
-    if (existingPermission) {
-      // Update existing permission
-      const { error } = await supabase
-        .from('user_page_permissions')
-        .update({ [permissionType]: value })
-        .eq('user_id', selectedUser.id)
-        .eq('page_path', pagePath);
+    try {
+      const existingPermission = userPermissions.find(p => p.page_path === pagePath);
+      
+      if (existingPermission) {
+        // Update existing permission
+        const { error } = await supabase
+          .from('user_page_permissions')
+          .update({ [permissionType]: value })
+          .eq('user_id', selectedUser.id)
+          .eq('page_path', pagePath);
 
-      if (error) {
-        toast.error('Gagal mengubah permission');
-        return;
+        if (error) {
+          console.error('Error updating permission:', error);
+          toast.error('Gagal mengubah permission');
+          return;
+        }
+      } else {
+        // Create new permission
+        const pageData = pages.find(p => p.page_path === pagePath);
+        if (!pageData) return;
+
+        const { error } = await supabase
+          .from('user_page_permissions')
+          .insert({
+            user_id: selectedUser.id,
+            page_path: pagePath,
+            page_name: pageData.page_name,
+            [permissionType]: value,
+            description: 'Manual permission'
+          });
+
+        if (error) {
+          console.error('Error creating permission:', error);
+          toast.error('Gagal menambah permission');
+          return;
+        }
       }
-    } else {
-      // Create new permission
-      const pageData = pages.find(p => p.page_path === pagePath);
-      if (!pageData) return;
 
-      const { error } = await supabase
-        .from('user_page_permissions')
-        .insert({
-          user_id: selectedUser.id,
-          page_path: pagePath,
-          page_name: pageData.page_name,
-          [permissionType]: value,
-          description: 'Manual permission'
-        });
-
-      if (error) {
-        toast.error('Gagal menambah permission');
-        return;
-      }
+      fetchUserPermissions(selectedUser.id);
+    } catch (error) {
+      console.error('Unexpected error handling permission:', error);
+      toast.error('Terjadi kesalahan saat mengatur permission');
     }
-
-    fetchUserPermissions(selectedUser.id);
   };
 
   const openPermissionDialog = (user: UserData) => {
@@ -245,53 +300,66 @@ export default function UserManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Nama Lengkap</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Tanggal Daftar</TableHead>
-                  <TableHead>Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.email}</TableCell>
-                    <TableCell>{user.full_name || '-'}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.role}
-                        onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pengguna">Pengguna</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="superadmin">Superadmin</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString('id-ID')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openPermissionDialog(user)}
-                      >
-                        <Settings className="h-4 w-4 mr-1" />
-                        Permission
-                      </Button>
-                    </TableCell>
+            {users.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">Tidak ada data pengguna yang ditemukan</p>
+                <Button 
+                  onClick={fetchUsers} 
+                  variant="outline" 
+                  className="mt-4"
+                >
+                  Muat Ulang
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Nama Lengkap</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Tanggal Daftar</TableHead>
+                    <TableHead>Aksi</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.email}</TableCell>
+                      <TableCell>{user.full_name || '-'}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={user.role}
+                          onValueChange={(value: UserRole) => handleRoleChange(user.id, value)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pengguna">Pengguna</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="superadmin">Superadmin</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.created_at).toLocaleDateString('id-ID')}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPermissionDialog(user)}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Permission
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
