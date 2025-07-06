@@ -425,13 +425,13 @@ export default function LaporanRealisasiAnggaran() {
   };
 
   return (
-    <Layout title="Laporan Realisasi Anggaran">
+    <Layout title="LRA">
       <div className="space-y-4 sm:space-y-6 p-2 sm:p-0">
         {/* Header with Filter and Export Buttons */}
         <div className="flex flex-col gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Laporan Realisasi Anggaran (LRA)</h1>
-            <p className="text-sm sm:text-base text-gray-600">Perbandingan anggaran dengan realisasi tahun {currentYear}</p>
+            <p className="text-sm sm:text-base text-gray-600">Perbandingan dengan realisasi tahun {currentYear}</p>
           </div>
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
