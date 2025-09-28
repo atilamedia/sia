@@ -1,7 +1,6 @@
 
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,13 +14,21 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let mysqlClient: Client | null = null;
+
   try {
     console.log(`Incoming request: ${req.method} ${req.url}`)
     
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    // Initialize MySQL connection
+    mysqlClient = await new Client().connect({
+      hostname: Deno.env.get('MYSQL_HOST') ?? 'localhost',
+      port: parseInt(Deno.env.get('MYSQL_PORT') ?? '3306'),
+      username: Deno.env.get('MYSQL_USERNAME') ?? 'root',
+      password: Deno.env.get('MYSQL_PASSWORD') ?? '',
+      db: Deno.env.get('MYSQL_DATABASE') ?? ''
+    })
+
+    console.log('Connected to MySQL database')
 
     const url = new URL(req.url)
     let path = url.pathname
@@ -60,21 +67,10 @@ serve(async (req) => {
       
       if (method === 'GET') {
         console.log('Fetching rekening data from m_rekening table')
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .select('*')
-          .order('kode_rek', { ascending: true })
+        const result = await mysqlClient.execute('SELECT * FROM m_rekening ORDER BY kode_rek ASC')
 
-        if (error) {
-          console.error('Error fetching rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        console.log(`Found ${data?.length || 0} rekening records`)
-        return new Response(JSON.stringify({ data }), {
+        console.log(`Found ${result.rows?.length || 0} rekening records`)
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -83,20 +79,16 @@ serve(async (req) => {
         const body = await req.json()
         console.log('Creating rekening with data:', body)
         
-        const { data, error } = await supabaseClient
-          .from('m_rekening')
-          .insert(body)
-          .select()
+        const { kode_rek, nama_rek, saldo = 0, level = 0, k_level = 'Induk', jenis_rek = 'NERACA', rek_induk = null, id_div = '01' } = body
 
-        if (error) {
-          console.error('Error creating rekening:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        await mysqlClient.execute(
+          'INSERT INTO m_rekening (kode_rek, nama_rek, saldo, level, k_level, jenis_rek, rek_induk, id_div, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+          [kode_rek, nama_rek, saldo, level, k_level, jenis_rek, rek_induk, id_div]
+        )
 
-        return new Response(JSON.stringify({ data }), {
+        const result = await mysqlClient.execute('SELECT * FROM m_rekening WHERE kode_rek = ?', [kode_rek])
+
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -125,38 +117,22 @@ serve(async (req) => {
           const body = await req.json()
           console.log('Raw request body:', JSON.stringify(body, null, 2))
           
-          // Clean up the data before updating - handle rek_induk properly
-          const cleanedData = {
-            ...body
-          }
-          
           // Handle rek_induk field properly - convert various null-like values to actual null
-          if (body.rek_induk === null || body.rek_induk === '' || body.rek_induk === '-' || body.rek_induk === 'null' || body.rek_induk === undefined) {
-            cleanedData.rek_induk = null
+          let rekInduk = body.rek_induk
+          if (rekInduk === null || rekInduk === '' || rekInduk === '-' || rekInduk === 'null' || rekInduk === undefined) {
+            rekInduk = null
           }
           
-          console.log('Cleaned data for update:', JSON.stringify(cleanedData, null, 2))
+          console.log('Cleaned data for update:', JSON.stringify(body, null, 2))
           
-          const { data, error } = await supabaseClient
-            .from('m_rekening')
-            .update(cleanedData)
-            .eq('kode_rek', kodeRek)
-            .select()
+          await mysqlClient.execute(
+            'UPDATE m_rekening SET nama_rek = ?, saldo = ?, level = ?, k_level = ?, jenis_rek = ?, rek_induk = ?, id_div = ?, updated_at = NOW() WHERE kode_rek = ?',
+            [body.nama_rek, body.saldo, body.level, body.k_level, body.jenis_rek, rekInduk, body.id_div, kodeRek]
+          )
 
-          if (error) {
-            console.error('Database error updating rekening:', error)
-            return new Response(JSON.stringify({ 
-              error: error.message,
-              details: error.details,
-              hint: error.hint,
-              code: error.code
-            }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            })
-          }
+          const result = await mysqlClient.execute('SELECT * FROM m_rekening WHERE kode_rek = ?', [kodeRek])
 
-          if (!data || data.length === 0) {
+          if (!result.rows || result.rows.length === 0) {
             console.log('No rows were updated, kode_rek might not exist:', kodeRek)
             return new Response(JSON.stringify({ 
               error: 'Record not found',
@@ -167,17 +143,19 @@ serve(async (req) => {
             })
           }
 
-          console.log('Successfully updated rekening:', data)
-          return new Response(JSON.stringify({ data }), {
+          console.log('Successfully updated rekening:', result.rows)
+          return new Response(JSON.stringify({ data: result.rows }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         } catch (updateError) {
           console.error('Caught error during update:', updateError)
+          const errorMessage = updateError instanceof Error ? updateError.message : 'Unknown error'
+          const errorStack = updateError instanceof Error ? updateError.stack : 'No stack trace'
           return new Response(JSON.stringify({ 
             error: 'Update failed',
-            message: updateError.message || 'Unknown error',
-            stack: updateError.stack || 'No stack trace'
+            message: errorMessage,
+            stack: errorStack || 'No stack trace'
           }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -189,27 +167,10 @@ serve(async (req) => {
         try {
           console.log('Starting DELETE operation for kode_rek:', kodeRek)
           
-          const { data, error } = await supabaseClient
-            .from('m_rekening')
-            .delete()
-            .eq('kode_rek', kodeRek)
-            .select()
-
-          if (error) {
-            console.error('Database error deleting rekening:', error)
-            return new Response(JSON.stringify({ 
-              error: error.message,
-              details: error.details,
-              hint: error.hint,
-              code: error.code
-            }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            })
-          }
-
-          if (!data || data.length === 0) {
-            console.log('No rows were deleted, kode_rek might not exist:', kodeRek)
+          const result = await mysqlClient.execute('SELECT * FROM m_rekening WHERE kode_rek = ?', [kodeRek])
+          
+          if (!result.rows || result.rows.length === 0) {
+            console.log('No rows found to delete, kode_rek might not exist:', kodeRek)
             return new Response(JSON.stringify({ 
               error: 'Record not found',
               message: `No record found with kode_rek: ${kodeRek}`
@@ -219,17 +180,21 @@ serve(async (req) => {
             })
           }
 
-          console.log('Successfully deleted rekening:', data)
-          return new Response(JSON.stringify({ data }), {
+          await mysqlClient.execute('DELETE FROM m_rekening WHERE kode_rek = ?', [kodeRek])
+
+          console.log('Successfully deleted rekening:', result.rows)
+          return new Response(JSON.stringify({ data: result.rows }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           })
         } catch (deleteError) {
           console.error('Caught error during delete:', deleteError)
+          const errorMessage = deleteError instanceof Error ? deleteError.message : 'Unknown error'
+          const errorStack = deleteError instanceof Error ? deleteError.stack : 'No stack trace'
           return new Response(JSON.stringify({ 
             error: 'Delete failed',
-            message: deleteError.message || 'Unknown error',
-            stack: deleteError.stack || 'No stack trace'
+            message: errorMessage,
+            stack: errorStack || 'No stack trace'
           }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -243,53 +208,54 @@ serve(async (req) => {
       if (method === 'GET') {
         const tahun = url.searchParams.get('tahun')
         
-        let query = supabaseClient
-          .from('anggaran')
-          .select(`
-            *,
-            m_rekening:kode_rek (
-              kode_rek,
-              nama_rek,
-              jenis_rek
-            )
-          `)
-          .order('kode_rek', { ascending: true })
+        let query = `
+          SELECT a.*, m.kode_rek, m.nama_rek, m.jenis_rek 
+          FROM anggaran a 
+          LEFT JOIN m_rekening m ON a.kode_rek = m.kode_rek 
+          ORDER BY a.kode_rek ASC
+        `
+        let params: any[] = []
 
         if (tahun) {
-          query = query.eq('tahun', parseInt(tahun))
+          query = `
+            SELECT a.*, m.kode_rek, m.nama_rek, m.jenis_rek 
+            FROM anggaran a 
+            LEFT JOIN m_rekening m ON a.kode_rek = m.kode_rek 
+            WHERE a.tahun = ?
+            ORDER BY a.kode_rek ASC
+          `
+          params = [parseInt(tahun)]
         }
 
-        const { data, error } = await query
+        const result = await mysqlClient.execute(query, params)
 
-        if (error) {
-          console.error('Error fetching anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        // Transform result to match Supabase structure
+        const transformedData = result.rows?.map((row: any) => ({
+          ...row,
+          m_rekening: {
+            kode_rek: row.kode_rek,
+            nama_rek: row.nama_rek,
+            jenis_rek: row.jenis_rek
+          }
+        }))
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: transformedData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'POST') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .insert(body)
-          .select()
+        const { kode_rek, tahun, total = 0, validasi_realisasi = 'Y', tanda = 'N', usernya = '' } = body
 
-        if (error) {
-          console.error('Error creating anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        await mysqlClient.execute(
+          'INSERT INTO anggaran (kode_rek, tahun, total, validasi_realisasi, tanda, usernya, at_create, last_update) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())',
+          [kode_rek, tahun, total, validasi_realisasi, tanda, usernya]
+        )
 
-        return new Response(JSON.stringify({ data }), {
+        const result = await mysqlClient.execute('SELECT * FROM anggaran WHERE kode_rek = ? AND tahun = ?', [kode_rek, tahun])
+
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -303,43 +269,25 @@ serve(async (req) => {
 
       if (method === 'PUT') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .update(body)
-          .eq('kode_rek', kodeRek)
-          .eq('tahun', tahun)
-          .select()
+        
+        await mysqlClient.execute(
+          'UPDATE anggaran SET total = ?, validasi_realisasi = ?, tanda = ?, usernya = ?, last_update = NOW() WHERE kode_rek = ? AND tahun = ?',
+          [body.total, body.validasi_realisasi, body.tanda, body.usernya, kodeRek, tahun]
+        )
 
-        if (error) {
-          console.error('Error updating anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        const result = await mysqlClient.execute('SELECT * FROM anggaran WHERE kode_rek = ? AND tahun = ?', [kodeRek, tahun])
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'DELETE') {
-        const { data, error } = await supabaseClient
-          .from('anggaran')
-          .delete()
-          .eq('kode_rek', kodeRek)
-          .eq('tahun', tahun)
-          .select()
+        const result = await mysqlClient.execute('SELECT * FROM anggaran WHERE kode_rek = ? AND tahun = ?', [kodeRek, tahun])
+        
+        await mysqlClient.execute('DELETE FROM anggaran WHERE kode_rek = ? AND tahun = ?', [kodeRek, tahun])
 
-        if (error) {
-          console.error('Error deleting anggaran:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -351,55 +299,71 @@ serve(async (req) => {
         const startDate = url.searchParams.get('start_date')
         const endDate = url.searchParams.get('end_date')
         
-        let query = supabaseClient
-          .from('kasmasuk')
-          .select(`
-            *,
-            m_rekening:kode_rek (
-              kode_rek,
-              nama_rek
-            )
-          `)
-          .order('tanggal', { ascending: false })
+        let query = `
+          SELECT k.*, m.kode_rek, m.nama_rek 
+          FROM kasmasuk k 
+          LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+          ORDER BY k.tanggal DESC
+        `
+        let params: any[] = []
 
-        if (startDate) {
-          query = query.gte('tanggal', startDate)
+        if (startDate && endDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kasmasuk k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal >= ? AND k.tanggal <= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [startDate, endDate]
+        } else if (startDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kasmasuk k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal >= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [startDate]
+        } else if (endDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kasmasuk k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal <= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [endDate]
         }
-        if (endDate) {
-          query = query.lte('tanggal', endDate)
-        }
 
-        const { data, error } = await query
+        const result = await mysqlClient.execute(query, params)
 
-        if (error) {
-          console.error('Error fetching kas masuk:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        // Transform result to match Supabase structure
+        const transformedData = result.rows?.map((row: any) => ({
+          ...row,
+          m_rekening: {
+            kode_rek: row.kode_rek,
+            nama_rek: row.nama_rek
+          }
+        }))
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: transformedData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'POST') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('kasmasuk')
-          .insert(body)
-          .select()
+        const { id_km, tanggal, kode_rek, total = 0, keterangan = '', pembayar = '', no_cek = '', usernya = '', id_div = '01', mark_cetak = 0 } = body
 
-        if (error) {
-          console.error('Error creating kas masuk:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        await mysqlClient.execute(
+          'INSERT INTO kasmasuk (id_km, tanggal, kode_rek, total, keterangan, pembayar, no_cek, usernya, id_div, mark_cetak, at_create, last_update) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+          [id_km, tanggal, kode_rek, total, keterangan, pembayar, no_cek, usernya, id_div, mark_cetak]
+        )
 
-        return new Response(JSON.stringify({ data }), {
+        const result = await mysqlClient.execute('SELECT * FROM kasmasuk WHERE id_km = ?', [id_km])
+
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -412,41 +376,25 @@ serve(async (req) => {
 
       if (method === 'PUT') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('kasmasuk')
-          .update(body)
-          .eq('id_km', idKm)
-          .select()
+        
+        await mysqlClient.execute(
+          'UPDATE kasmasuk SET tanggal = ?, kode_rek = ?, total = ?, keterangan = ?, pembayar = ?, no_cek = ?, usernya = ?, id_div = ?, mark_cetak = ?, last_update = NOW() WHERE id_km = ?',
+          [body.tanggal, body.kode_rek, body.total, body.keterangan, body.pembayar, body.no_cek, body.usernya, body.id_div, body.mark_cetak, idKm]
+        )
 
-        if (error) {
-          console.error('Error updating kas masuk:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        const result = await mysqlClient.execute('SELECT * FROM kasmasuk WHERE id_km = ?', [idKm])
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'DELETE') {
-        const { data, error } = await supabaseClient
-          .from('kasmasuk')
-          .delete()
-          .eq('id_km', idKm)
-          .select()
+        const result = await mysqlClient.execute('SELECT * FROM kasmasuk WHERE id_km = ?', [idKm])
+        
+        await mysqlClient.execute('DELETE FROM kasmasuk WHERE id_km = ?', [idKm])
 
-        if (error) {
-          console.error('Error deleting kas masuk:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -458,55 +406,71 @@ serve(async (req) => {
         const startDate = url.searchParams.get('start_date')
         const endDate = url.searchParams.get('end_date')
         
-        let query = supabaseClient
-          .from('kaskeluar')
-          .select(`
-            *,
-            m_rekening:kode_rek (
-              kode_rek,
-              nama_rek
-            )
-          `)
-          .order('tanggal', { ascending: false })
+        let query = `
+          SELECT k.*, m.kode_rek, m.nama_rek 
+          FROM kaskeluar k 
+          LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+          ORDER BY k.tanggal DESC
+        `
+        let params: any[] = []
 
-        if (startDate) {
-          query = query.gte('tanggal', startDate)
+        if (startDate && endDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kaskeluar k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal >= ? AND k.tanggal <= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [startDate, endDate]
+        } else if (startDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kaskeluar k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal >= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [startDate]
+        } else if (endDate) {
+          query = `
+            SELECT k.*, m.kode_rek, m.nama_rek 
+            FROM kaskeluar k 
+            LEFT JOIN m_rekening m ON k.kode_rek = m.kode_rek 
+            WHERE k.tanggal <= ?
+            ORDER BY k.tanggal DESC
+          `
+          params = [endDate]
         }
-        if (endDate) {
-          query = query.lte('tanggal', endDate)
-        }
 
-        const { data, error } = await query
+        const result = await mysqlClient.execute(query, params)
 
-        if (error) {
-          console.error('Error fetching kas keluar:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        // Transform result to match Supabase structure
+        const transformedData = result.rows?.map((row: any) => ({
+          ...row,
+          m_rekening: {
+            kode_rek: row.kode_rek,
+            nama_rek: row.nama_rek
+          }
+        }))
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: transformedData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'POST') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('kaskeluar')
-          .insert(body)
-          .select()
+        const { id_kk, tanggal, kode_rek, total = 0, keterangan = '', penerima = '', no_cek = '', bagian_seksi = '', usernya = '', id_div = '01', mark_cetak = 0 } = body
 
-        if (error) {
-          console.error('Error creating kas keluar:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        await mysqlClient.execute(
+          'INSERT INTO kaskeluar (id_kk, tanggal, kode_rek, total, keterangan, penerima, no_cek, bagian_seksi, usernya, id_div, mark_cetak, at_create, last_update) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
+          [id_kk, tanggal, kode_rek, total, keterangan, penerima, no_cek, bagian_seksi, usernya, id_div, mark_cetak]
+        )
 
-        return new Response(JSON.stringify({ data }), {
+        const result = await mysqlClient.execute('SELECT * FROM kaskeluar WHERE id_kk = ?', [id_kk])
+
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -519,41 +483,25 @@ serve(async (req) => {
 
       if (method === 'PUT') {
         const body = await req.json()
-        const { data, error } = await supabaseClient
-          .from('kaskeluar')
-          .update(body)
-          .eq('id_kk', idKk)
-          .select()
+        
+        await mysqlClient.execute(
+          'UPDATE kaskeluar SET tanggal = ?, kode_rek = ?, total = ?, keterangan = ?, penerima = ?, no_cek = ?, bagian_seksi = ?, usernya = ?, id_div = ?, mark_cetak = ?, last_update = NOW() WHERE id_kk = ?',
+          [body.tanggal, body.kode_rek, body.total, body.keterangan, body.penerima, body.no_cek, body.bagian_seksi, body.usernya, body.id_div, body.mark_cetak, idKk]
+        )
 
-        if (error) {
-          console.error('Error updating kas keluar:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        const result = await mysqlClient.execute('SELECT * FROM kaskeluar WHERE id_kk = ?', [idKk])
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
       if (method === 'DELETE') {
-        const { data, error } = await supabaseClient
-          .from('kaskeluar')
-          .delete()
-          .eq('id_kk', idKk)
-          .select()
+        const result = await mysqlClient.execute('SELECT * FROM kaskeluar WHERE id_kk = ?', [idKk])
+        
+        await mysqlClient.execute('DELETE FROM kaskeluar WHERE id_kk = ?', [idKk])
 
-        if (error) {
-          console.error('Error deleting kas keluar:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: result.rows }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -565,42 +513,107 @@ serve(async (req) => {
         const startDate = url.searchParams.get('start_date')
         const endDate = url.searchParams.get('end_date')
         
-        let query = supabaseClient
-          .from('jurnalumum')
-          .select(`
-            *,
-            jurnal_jenis:id_jj (
-              id_jj,
-              nm_jj
-            ),
-            jurnal (
-              *,
-              m_rekening:kode_rek (
-                kode_rek,
-                nama_rek
-              )
-            )
-          `)
-          .order('tanggal', { ascending: false })
+        let query = `
+          SELECT ju.*, jj.id_jj, jj.nm_jj,
+                 j.kode AS jurnal_kode, j.kode_rek, j.deskripsi AS jurnal_deskripsi, 
+                 j.debit, j.kredit, j.tanda_lo, j.tanggal AS jurnal_tanggal,
+                 m.kode_rek AS m_kode_rek, m.nama_rek
+          FROM jurnalumum ju 
+          LEFT JOIN jurnal_jenis jj ON ju.id_jj = jj.id_jj
+          LEFT JOIN jurnal j ON ju.id_ju = j.kode
+          LEFT JOIN m_rekening m ON j.kode_rek = m.kode_rek
+          ORDER BY ju.tanggal DESC
+        `
+        let params: any[] = []
 
-        if (startDate) {
-          query = query.gte('tanggal', startDate)
+        if (startDate && endDate) {
+          query = `
+            SELECT ju.*, jj.id_jj, jj.nm_jj,
+                   j.kode AS jurnal_kode, j.kode_rek, j.deskripsi AS jurnal_deskripsi, 
+                   j.debit, j.kredit, j.tanda_lo, j.tanggal AS jurnal_tanggal,
+                   m.kode_rek AS m_kode_rek, m.nama_rek
+            FROM jurnalumum ju 
+            LEFT JOIN jurnal_jenis jj ON ju.id_jj = jj.id_jj
+            LEFT JOIN jurnal j ON ju.id_ju = j.kode
+            LEFT JOIN m_rekening m ON j.kode_rek = m.kode_rek
+            WHERE ju.tanggal >= ? AND ju.tanggal <= ?
+            ORDER BY ju.tanggal DESC
+          `
+          params = [startDate, endDate]
+        } else if (startDate) {
+          query = `
+            SELECT ju.*, jj.id_jj, jj.nm_jj,
+                   j.kode AS jurnal_kode, j.kode_rek, j.deskripsi AS jurnal_deskripsi, 
+                   j.debit, j.kredit, j.tanda_lo, j.tanggal AS jurnal_tanggal,
+                   m.kode_rek AS m_kode_rek, m.nama_rek
+            FROM jurnalumum ju 
+            LEFT JOIN jurnal_jenis jj ON ju.id_jj = jj.id_jj
+            LEFT JOIN jurnal j ON ju.id_ju = j.kode
+            LEFT JOIN m_rekening m ON j.kode_rek = m.kode_rek
+            WHERE ju.tanggal >= ?
+            ORDER BY ju.tanggal DESC
+          `
+          params = [startDate]
+        } else if (endDate) {
+          query = `
+            SELECT ju.*, jj.id_jj, jj.nm_jj,
+                   j.kode AS jurnal_kode, j.kode_rek, j.deskripsi AS jurnal_deskripsi, 
+                   j.debit, j.kredit, j.tanda_lo, j.tanggal AS jurnal_tanggal,
+                   m.kode_rek AS m_kode_rek, m.nama_rek
+            FROM jurnalumum ju 
+            LEFT JOIN jurnal_jenis jj ON ju.id_jj = jj.id_jj
+            LEFT JOIN jurnal j ON ju.id_ju = j.kode
+            LEFT JOIN m_rekening m ON j.kode_rek = m.kode_rek
+            WHERE ju.tanggal <= ?
+            ORDER BY ju.tanggal DESC
+          `
+          params = [endDate]
         }
-        if (endDate) {
-          query = query.lte('tanggal', endDate)
-        }
 
-        const { data, error } = await query
+        const result = await mysqlClient.execute(query, params)
 
-        if (error) {
-          console.error('Error fetching jurnal:', error)
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        // Transform result to match Supabase structure - group jurnal entries by jurnalumum
+        const groupedData: any = {}
+        result.rows?.forEach((row: any) => {
+          if (!groupedData[row.id_ju]) {
+            groupedData[row.id_ju] = {
+              id_ju: row.id_ju,
+              tanggal: row.tanggal,
+              usernya: row.usernya,
+              id_div: row.id_div,
+              id_jj: row.id_jj,
+              mark_cetak: row.mark_cetak,
+              is_mutasi: row.is_mutasi,
+              at_create: row.at_create,
+              last_update: row.last_update,
+              jurnal_jenis: {
+                id_jj: row.id_jj,
+                nm_jj: row.nm_jj
+              },
+              jurnal: []
+            }
+          }
+          
+          if (row.jurnal_kode) {
+            groupedData[row.id_ju].jurnal.push({
+              kode: row.jurnal_kode,
+              kode_rek: row.kode_rek,
+              deskripsi: row.jurnal_deskripsi,
+              debit: row.debit,
+              kredit: row.kredit,
+              tanda_lo: row.tanda_lo,
+              tanggal: row.jurnal_tanggal,
+              m_rekening: {
+                kode_rek: row.m_kode_rek,
+                nama_rek: row.nama_rek
+              }
+            })
+          }
+        })
 
-        return new Response(JSON.stringify({ data }), {
+        const transformedData = Object.values(groupedData)
+
+        return new Response(JSON.stringify({ data: transformedData }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -608,48 +621,30 @@ serve(async (req) => {
       if (method === 'POST') {
         const body = await req.json()
         
-        // Start transaction
-        const { data: jurnalUmum, error: jurnalError } = await supabaseClient
-          .from('jurnalumum')
-          .insert({
-            id_ju: body.id_ju,
-            tanggal: body.tanggal,
-            usernya: body.usernya,
-            id_div: body.id_div,
-            id_jj: body.id_jj
-          })
-          .select()
+        // Start transaction - Insert jurnalumum first
+        await mysqlClient.execute(
+          'INSERT INTO jurnalumum (id_ju, tanggal, usernya, id_div, id_jj, at_create, last_update) VALUES (?, ?, ?, ?, ?, NOW(), NOW())',
+          [body.id_ju, body.tanggal, body.usernya, body.id_div, body.id_jj]
+        )
 
-        if (jurnalError) {
-          console.error('Error creating jurnal umum:', jurnalError)
-          return new Response(JSON.stringify({ error: jurnalError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        const jurnalUmumResult = await mysqlClient.execute('SELECT * FROM jurnalumum WHERE id_ju = ?', [body.id_ju])
 
         // Insert jurnal entries
-        const jurnalEntries = body.entries.map((entry: any) => ({
-          ...entry,
-          kode: body.id_ju,
-          tanggal: body.tanggal,
-          usernya: body.usernya
-        }))
+        const insertPromises = body.entries.map((entry: any) => {
+          if (!mysqlClient) {
+            throw new Error('Database connection not available')
+          }
+          return mysqlClient.execute(
+            'INSERT INTO jurnal (kode, kode_rek, deskripsi, debit, kredit, tanda_lo, tanggal, usernya, at_create) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+            [body.id_ju, entry.kode_rek, entry.deskripsi, entry.debit || 0, entry.kredit || 0, entry.tanda_lo || 'N', body.tanggal, body.usernya]
+          )
+        })
 
-        const { data: entries, error: entriesError } = await supabaseClient
-          .from('jurnal')
-          .insert(jurnalEntries)
-          .select()
+        await Promise.all(insertPromises)
 
-        if (entriesError) {
-          console.error('Error creating jurnal entries:', entriesError)
-          return new Response(JSON.stringify({ error: entriesError.message }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
+        const entriesResult = await mysqlClient.execute('SELECT * FROM jurnal WHERE kode = ?', [body.id_ju])
 
-        return new Response(JSON.stringify({ data: { jurnal: jurnalUmum, entries } }), {
+        return new Response(JSON.stringify({ data: { jurnal: jurnalUmumResult.rows, entries: entriesResult.rows } }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
@@ -664,14 +659,25 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Unhandled error in edge function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : 'No stack trace'
     return new Response(JSON.stringify({ 
       error: 'Internal server error',
-      message: error.message || 'Unknown error',
-      stack: error.stack || 'No stack trace'
+      message: errorMessage,
+      stack: errorStack || 'No stack trace'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+  } finally {
+    // Close MySQL connection
+    if (mysqlClient) {
+      try {
+        await mysqlClient.close()
+        console.log('MySQL connection closed')
+      } catch (closeError) {
+        console.error('Error closing MySQL connection:', closeError)
+      }
+    }
   }
 })
-
